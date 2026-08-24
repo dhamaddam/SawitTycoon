@@ -70,21 +70,42 @@ void Engine::newGame(){
     pksState_.pkPrice = cfg_.pkPrice;
 
     trees_.clear();
-    int id = 0;
+    // 143 pokok, pola SEGITIGA SAMA SISI (mata lima) -- BUKAN grid kotak lurus,
+    // di origin (0,0) -- lihat generateBlockTrees_() utk detail pola & sitasi.
+    int b0Start, b0End;
+    generateBlockTrees_(0.0, 0.0, b0Start, b0End);
+
+    // Kebun secara resmi jadi "Block A01" di bawah "Afdeling I" -- fondasi
+    // hierarki Kebun>Afdeling>Block>Baris>Pokok. Block mereferensikan RENTANG
+    // indeks di trees_ (bukan salinan data), spy tak ada duplikasi/drift.
+    // "Block terdiri dari banyak baris tanaman + infrastruktur lokal, BUKAN
+    // 1 baris = 1 block" -- keputusan desain, ukuran (ha) bukan klaim dari
+    // Corley & Tinker (buku tak menetapkan 1 ukuran block universal).
+    blocks_.clear();
+    blocks_.push_back(Block{0, "A01", 0, land_.sampleBlockHa, b0Start, b0End, 0.0, 0.0});
+
+    simAccum_ = 0;
+    tphAutoTimer_ = 26;
+    activityLog_.clear();
+}
+
+void Engine::generateBlockTrees_(double originX, double originZ, int& outStartIdx, int& outEndIdx){
+    outStartIdx = (int)trees_.size();
+    int id = outStartIdx;
     // 143 pokok, pola SEGITIGA SAMA SISI (mata lima) -- BUKAN grid kotak lurus.
     // Sesuai SOP jarak tanam 9x9x9m utk populasi 143 pokok/Ha: jarak antar
     // tanaman 9m, jarak antar BARIS 7,8m (rasio 7,8/9=0,867 = sin(60 derajat),
     // krn segitiga sama sisi). Baris genap digeser setengah spacing horizontal
     // -> pola berselang-seling (mata lima/hexagonal), bukan baris lurus sejajar.
-    // Konstanta dipakai dari kGridCols dst (anggota kelas) -- SATU sumber
-    // kebenaran, dipakai jg oleh computeCorridorPath_ (jalur jalan pekerja).
+    // originX/originZ menggeser SELURUH grid (bukan tiap pohon independen) --
+    // dipakai beliHa() menempatkan block baru di area terpisah dr block lain.
     for (int r=0; r<kGridRows; ++r){
         double rowOffset = (r % 2 == 1) ? kColSpacing*0.5 : 0.0; // selang-seling -> pola segitiga
         for (int c=0; c<kGridCols; ++c){
             Tree t;
             t.id = id++;
-            t.x = kGridOriginX + c*kColSpacing + rowOffset + (randUnit_()-0.5)*0.4;
-            t.z = kGridOriginZ + r*kRowSpacing + (randUnit_()-0.5)*0.4;
+            t.x = originX + kGridOriginX + c*kColSpacing + rowOffset + (randUnit_()-0.5)*0.4;
+            t.z = originZ + kGridOriginZ + r*kRowSpacing + (randUnit_()-0.5)*0.4;
             t.ageYears = 2.0 + randUnit_()*10.0;
             t.frond = 0.15 + randUnit_()*0.3;
             t.ffb = FfbState::Growing;
@@ -96,19 +117,7 @@ void Engine::newGame(){
             trees_.push_back(t);
         }
     }
-
-    // Kebun secara resmi jadi "Block A01" di bawah "Afdeling I" -- fondasi
-    // hierarki Kebun>Afdeling>Block>Baris>Pokok. Block mereferensikan RENTANG
-    // indeks di trees_ (bukan salinan data), spy tak ada duplikasi/drift.
-    // "Block terdiri dari banyak baris tanaman + infrastruktur lokal, BUKAN
-    // 1 baris = 1 block" -- keputusan desain, ukuran (ha) bukan klaim dari
-    // Corley & Tinker (buku tak menetapkan 1 ukuran block universal).
-    blocks_.clear();
-    blocks_.push_back(Block{0, "A01", 0, land_.sampleBlockHa, 0, (int)trees_.size()});
-
-    simAccum_ = 0;
-    tphAutoTimer_ = 26;
-    activityLog_.clear();
+    outEndIdx = (int)trees_.size();
 }
 
 void Engine::emit(EventType t, const std::string& text, int treeId){
@@ -380,15 +389,22 @@ void Engine::updateWorkers_(double dt){
 // gambut, §9); SOP "pasar pikul" (jalur panen antar baris). Pekerja jalan
 // SEJAJAR SUMBU (menyusuri gawangan/koridor antar baris) alih-alih memotong
 // diagonal yg bisa terlihat "menembus" kanopi pohon-pohon lain di antaranya.
-void Engine::computeCorridorPath_(double startX, double startZ, double targetX, double targetZ,
+void Engine::computeCorridorPath_(double startX, double startZ, double targetX, double targetZ, int targetTreeId,
                                     double* wp1X, double* wp1Z, double* wp2X, double* wp2Z) const {
-    // baris terdekat dgn TARGET (formula SAMA dgn newGame() -- kGridOriginZ/kRowSpacing)
-    int row = (int)std::round((targetZ - kGridOriginZ) / kRowSpacing);
+    // Cari originZ BLOCK yg memuat targetTreeId (bisa beda dari kGridOriginZ
+    // kalau target ada di block baru hasil beliHa()). Fallback ke
+    // kGridOriginZ (Block A01) kalau target bukan pohon (mis. TPH/kantor).
+    double originZ = kGridOriginZ;
+    for (const auto& b : blocks_){
+        if (targetTreeId >= b.treeStartIdx && targetTreeId < b.treeEndIdx){ originZ = b.originZ + kGridOriginZ; break; }
+    }
+    // baris terdekat dgn TARGET (formula SAMA dgn generateBlockTrees_ -- originZ/kRowSpacing)
+    int row = (int)std::round((targetZ - originZ) / kRowSpacing);
     row = std::max(0, std::min(kGridRows-1, row));
     // pilih koridor (celah SEBELUM atau SESUDAH baris tsb) yg lebih dekat ke
     // posisi AWAL pekerja -- spy segmen pertama (start->wp1) sesingkat mungkin.
-    double corridorBefore = kGridOriginZ + (row-0.5)*kRowSpacing;
-    double corridorAfter  = kGridOriginZ + (row+0.5)*kRowSpacing;
+    double corridorBefore = originZ + (row-0.5)*kRowSpacing;
+    double corridorAfter  = originZ + (row+0.5)*kRowSpacing;
     double corridorZ = (std::abs(startZ-corridorBefore) < std::abs(startZ-corridorAfter))
                         ? corridorBefore : corridorAfter;
     *wp1X = startX;  *wp1Z = corridorZ;  // segmen 1: lurus ke garis koridor (Z berubah, X tetap)
@@ -401,7 +417,7 @@ void Engine::startJob_(int workerIdx, const std::string& kind, int treeId, doubl
     w.busy = true; w.kind = kind; w.treeId = treeId; w.phase.clear();
     w.startX = w.x; w.startZ = w.z; // mulai dari posisi TERAKHIR (bukan reset ke 0,0)
     w.targetX = targetX; w.targetZ = targetZ;
-    computeCorridorPath_(w.startX, w.startZ, targetX, targetZ, &w.wp1X, &w.wp1Z, &w.wp2X, &w.wp2Z);
+    computeCorridorPath_(w.startX, w.startZ, targetX, targetZ, treeId, &w.wp1X, &w.wp1Z, &w.wp2X, &w.wp2Z);
     double seg1 = std::sqrt((w.wp1X-w.startX)*(w.wp1X-w.startX) + (w.wp1Z-w.startZ)*(w.wp1Z-w.startZ));
     double seg2 = std::sqrt((w.wp2X-w.wp1X)*(w.wp2X-w.wp1X) + (w.wp2Z-w.wp1Z)*(w.wp2Z-w.wp1Z));
     double seg3 = std::sqrt((targetX-w.wp2X)*(targetX-w.wp2X) + (targetZ-w.wp2Z)*(targetZ-w.wp2Z));
@@ -423,7 +439,7 @@ void Engine::completeJob_(WorkerJob& job){
             job.startX = job.x; job.startZ = job.z; // dari posisi pohon (sudah sampai)
             job.targetX = kTphX; job.targetZ = kTphZ;
             {
-                computeCorridorPath_(job.startX, job.startZ, job.targetX, job.targetZ,
+                computeCorridorPath_(job.startX, job.startZ, job.targetX, job.targetZ, job.treeId,
                                       &job.wp1X, &job.wp1Z, &job.wp2X, &job.wp2Z);
                 double seg1 = std::sqrt((job.wp1X-job.startX)*(job.wp1X-job.startX) + (job.wp1Z-job.startZ)*(job.wp1Z-job.startZ));
                 double seg2 = std::sqrt((job.wp2X-job.wp1X)*(job.wp2X-job.wp1X) + (job.wp2Z-job.wp1Z)*(job.wp2Z-job.wp1Z));
@@ -715,6 +731,25 @@ bool Engine::beliHa(double amountHa){
     if (eco_.money < price){ emit(EventType::Toast,"Uang tidak cukup"); return false; }
     eco_.money -= price;
     last.ha += amountHa;
+
+    // Setiap 1.0 Ha PENUH yg dibeli -> 1 block baru dgn 143 pohon SUNGGUHAN
+    // (dulu cuma angka abstrak, TAK PERNAH ada pohonnya) -- ditempatkan di
+    // area TERPISAH (originX digeser 120 unit/block, grid asli lebar ~57
+    // unit dgn jitter jadi tak mungkin tumpang tindih). Sisa pecahan (kalau
+    // amountHa bukan kelipatan 1.0 penuh) tetap dihitung scr abstrak spt
+    // sebelumnya (lihat onNewDay_) -- blm cukup utk 1 grid 143 pohon penuh.
+    int wholeHaBought = (int)std::floor(amountHa);
+    for (int i=0; i<wholeHaBought; ++i){
+        double newOriginX = (double)blocks_.size() * 120.0;
+        int ts, te;
+        generateBlockTrees_(newOriginX, 0.0, ts, te);
+        int newId = (int)blocks_.size();
+        std::string blockName = "A" + std::string(blocks_.size()+1 < 10 ? "0" : "") + std::to_string((int)blocks_.size()+1);
+        blocks_.push_back(Block{newId, blockName, last.id, 1.0, ts, te, newOriginX, 0.0});
+        land_.sampleBlockHa += 1.0; // kecualikan dr formula hasil abstrak -- block ini skrg produksi via simulasi pohon sungguhan, bukan formula lagi
+        emit(EventType::Toast, blockName+" dibuka dengan 143 pokok baru!");
+    }
+
     emit(EventType::HudChanged); emit(EventType::ScreenChanged);
     emit(EventType::Toast, "+"+std::to_string((long long)amountHa)+" Ha ditambahkan ke "+last.name);
     return true;

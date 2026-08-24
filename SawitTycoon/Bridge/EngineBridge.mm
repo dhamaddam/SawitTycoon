@@ -151,7 +151,11 @@ using namespace sawit;
 }
 - (void)glDrawFrameSelectedTreeId:(NSInteger)selectedTreeId {
     sawit::gl::beginFrame();
-    sawit::gl::drawGround();
+    // Tanah digambar PER BLOCK (bukan sekali global spt dulu) -- block baru
+    // dari beliHa() punya originX/Z sendiri, butuh tanahnya sendiri jg.
+    for (const Block &b : _engine.blocks()) {
+        sawit::gl::drawGround((float)b.originX, (float)b.originZ);
+    }
     int today = _engine.economy().day;
     for (const Tree &t : _engine.trees()) {
         sawit::gl::drawPalm((float)t.x, (float)t.z, (float)t.ageYears, (float)t.frond,

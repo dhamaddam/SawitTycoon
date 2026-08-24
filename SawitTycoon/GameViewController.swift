@@ -302,6 +302,26 @@ final class GameViewController: GLKViewController {
             devBtn.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
         ])
 
+        // Tombol Lahan -- BUG LAMA diperbaiki: beliHa/bukaAfdelingBaru sudah
+        // ada di EngineBridge SEJAK SEBELUM sesi ini, tapi tak pernah
+        // tersambung ke UI mana pun (dilaporkan pengguna: "tidak melihat
+        // tombol beli ha/blok"). Sekarang setiap 1 Ha yg dibeli membuat Block
+        // BARU dgn 143 pohon sungguhan (lihat engine.cpp beliHa()).
+        let landBtn = UIButton(type: .system)
+        landBtn.setTitle("🌍 Lahan", for: .normal)
+        landBtn.setTitleColor(.white, for: .normal)
+        landBtn.titleLabel?.font = .systemFont(ofSize: 11)
+        landBtn.backgroundColor = UIColor(white: 0, alpha: 0.5)
+        landBtn.layer.cornerRadius = 6
+        landBtn.contentEdgeInsets = UIEdgeInsets(top: 4, left: 8, bottom: 4, right: 8)
+        landBtn.translatesAutoresizingMaskIntoConstraints = false
+        landBtn.addTarget(self, action: #selector(tapLand), for: .touchUpInside)
+        view.addSubview(landBtn)
+        NSLayoutConstraint.activate([
+            landBtn.topAnchor.constraint(equalTo: devBtn.bottomAnchor, constant: 6),
+            landBtn.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
+        ])
+
         panelTitle.textColor = UIColor(white: 0.95, alpha: 1)
         panelTitle.font = .boldSystemFont(ofSize: 14)
         panelTitle.text = "Ketuk sebuah pokok"
@@ -732,6 +752,33 @@ final class GameViewController: GLKViewController {
         navHoldDir = 0
         navHoldTimer?.invalidate()
         navHoldTimer = nil
+    }
+
+    @objc private func tapLand() {
+        let totalHa = engine.totalHa()
+        let pricePerHa = engine.haPrice()
+        let blockCount = engine.blockSummaries().count
+        let msg = "Total lahan: \(totalHa) Ha\nJumlah Block: \(blockCount)\n" +
+            "Harga beli 1 Ha berikutnya: Rp \(Int(pricePerHa))\n\n" +
+            "Membeli 1 Ha akan membuka Block baru berisi 143 pokok sungguhan " +
+            "(bukan cuma angka), ditempatkan di area terpisah dari block yg sudah ada."
+        let alert = UIAlertController(title: "🌍 Lahan", message: msg, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Beli 1 Ha", style: .default) { [weak self] _ in
+            guard let self = self else { return }
+            if !self.engine.beliHa(1.0) {
+                self.showToast("Gagal -- cek uang atau kapasitas afdeling")
+            }
+            self.refreshTreesAndHud()
+        })
+        alert.addAction(UIAlertAction(title: "Buka Afdeling Baru", style: .default) { [weak self] _ in
+            guard let self = self else { return }
+            if !self.engine.bukaAfdelingBaru() {
+                self.showToast("Gagal -- cek syarat (Asisten Afdeling) atau uang")
+            }
+            self.refreshTreesAndHud()
+        })
+        alert.addAction(UIAlertAction(title: "Tutup", style: .cancel))
+        present(alert, animated: true)
     }
 
     @objc private func tapDevRandomize() {

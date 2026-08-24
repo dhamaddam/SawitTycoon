@@ -259,13 +259,15 @@ void beginFrame(){
     g_animT += 0.033f; // aproksimasi ~30fps; cukup utk animasi bob/hentak, tak perlu presisi wall-clock
 }
 
-void drawGround(){
+void drawGround(float originX, float originZ){
     // Dasar tanah: coklat/pasir — meniru warna permukaan tanah kebun sawit
     // (lateritic, umum di kebun Indonesia). Diperlebar dari versi sebelumnya
     // supaya menutupi grid 143 pokok (11 kolom x 13 baris, lihat engine.cpp).
-    static const float quad[] = {
-        -45,0,-38,  45,0,-38,  45,0,38,
-        -45,0,-38,  45,0,38,  -45,0,38,
+    // originX/originZ: pusat grid block INI (bukan selalu 0,0 lagi -- block
+    // baru dari beliHa() digeser jauh di X, perlu tanahnya sendiri jg).
+    float quad[] = {
+        originX-45,0,originZ-38,  originX+45,0,originZ-38,  originX+45,0,originZ+38,
+        originX-45,0,originZ-38,  originX+45,0,originZ+38,  originX-45,0,originZ+38,
     };
     drawTris(quad, 6, 0.694f, 0.616f, 0.475f, 1.0f, 0,0,0, 1,1,1); // #b19d79 tanah/pasir
 
@@ -280,19 +282,21 @@ void drawGround(){
     // BUKAN garis lurus penuh spt versi lama, krn di kebun sungguhan tumpukan
     // pelepah tidak pernah rapi lurus sempurna.
     const float ROW_SPACING = 4.507f;   // = colSpacing(5.2) * 0.8667 (rasio SOP 7.8/9)
-    const float ROW_ORIGIN_Z = -6.0f*ROW_SPACING; // pusatkan spt originZ 13 baris di engine
+    const float ROW_ORIGIN_Z = originZ - 6.0f*ROW_SPACING; // pusatkan spt originZ 13 baris di engine
     const float GROUND_HALF_W = 44.0f;
 
-    unsigned seed = 0xC0FFEEu;
+    // Seed ikut originX/Z -- tiap block dapat pola mulsa acak-tapi-tetap yg
+    // BEDA (bukan pola identik ditempel berulang tiap block, terlihat aneh).
+    unsigned seed = 0xC0FFEEu ^ (unsigned)(originX*131.0f) ^ (unsigned)(originZ*197.0f);
     auto frand=[&](){ seed^=seed<<13; seed^=seed>>17; seed^=seed<<5; return (seed&0xFFFFFF)/float(0xFFFFFF); };
 
     for (int row=-1; row<=13; row++){
         if (((row+20) % 2) != 0) continue; // gawangan mati selang-seling saja (SOP)
         float zc = ROW_ORIGIN_Z + (row+0.5f)*ROW_SPACING;
-        if (zc < -37.0f || zc > 37.0f) continue;
+        if (zc < originZ-37.0f || zc > originZ+37.0f) continue;
         std::vector<float> corridor; // semua patch koridor ini digabung -> 1 draw call
-        float xCursor = -GROUND_HALF_W;
-        while (xCursor < GROUND_HALF_W){
+        float xCursor = originX - GROUND_HALF_W;
+        while (xCursor < originX + GROUND_HALF_W){
             float len = 3.0f + frand()*4.5f;
             float width = 0.9f + frand()*0.9f;
             float rot = (frand()-0.5f)*0.35f;      // sedikit miring, kesan organik

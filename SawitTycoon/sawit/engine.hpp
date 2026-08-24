@@ -245,11 +245,20 @@ private:
     void updateWorkers_(double dt);
     // Hitung 2 waypoint jalur koridor (menyusuri gawangan antar baris, bukan
     // garis lurus diagonal) dari start ke target -- lihat catatan WorkerJob.
-    void computeCorridorPath_(double startX, double startZ, double targetX, double targetZ,
+    // targetTreeId dipakai mencari originZ BLOCK yg benar (bukan cuma
+    // kGridOriginZ global) -- penting skrg krn block baru (dari beliHa) bisa
+    // punya originZ berbeda dari Block A01. -1 (target bukan pohon, mis.
+    // TPH/kantor) -> pakai kGridOriginZ (block pertama) sbg fallback wajar.
+    void computeCorridorPath_(double startX, double startZ, double targetX, double targetZ, int targetTreeId,
                                double* wp1X, double* wp1Z, double* wp2X, double* wp2Z) const;
     void completeJob_(WorkerJob& job);
     void startJob_(int workerIdx, const std::string& kind, int treeId, double targetX, double targetZ);
     int findFreeWorker_() const;
+    // Bangun grid segitiga 143 pohon (pola SAMA dgn newGame()) di originX/Z
+    // manapun, MENAMBAHKAN ke trees_ (bukan reset) -- dipakai newGame() UTK
+    // Block A01 (origin 0,0) dan beliHa() utk block baru (origin berbeda).
+    // Return [startIdx,endIdx) rentang trees_ yg baru ditambahkan.
+    void generateBlockTrees_(double originX, double originZ, int& outStartIdx, int& outEndIdx);
     void autoAssign_(int workerIdx);
     void sellOrProcessTbs_(double amount, bool silent);
 

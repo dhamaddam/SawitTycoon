@@ -21,7 +21,9 @@ void resize(int width, int height);   // panggil dari onSurfaceChanged
 void setCamera(float panX, float panZ, float distance, float yaw);
 
 void beginFrame();
-void drawGround();
+// originX/originZ: pusat grid block yg digambar tanahnya -- panggil SEKALI
+// per block (pemanggil/JNI/bridge iterasi semua block), bukan sekali global.
+void drawGround(float originX, float originZ);
 // health: 0=sehat,1=hama,2=ganoderma,3=mati ; ffb: 0=none,1=growing,2=ripe,3=overripe
 // nutrition (0..1): mempengaruhi KERAPATAN kanopi (proxy visual defisiensi
 // N/K/air) -- review eksternal "visualisasi state biologis": pohon jadi

@@ -151,6 +151,9 @@ struct Block {
     double ha = 0;
     int treeStartIdx = 0;   // rentang [treeStartIdx, treeEndIdx) di trees_
     int treeEndIdx = 0;
+    double originX = 0;     // pusat grid pohon block ini di dunia (unit game)
+    double originZ = 0;     // -- block baru (dari beliHa) ditempatkan di
+                             // originX berbeda, area terpisah tanpa tumpang tindih
 };
 
 // Agregat status Block, dihitung LIVE dari kondisi pohon saat ini (bukan
