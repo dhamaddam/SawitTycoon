@@ -6,12 +6,19 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		F281E9DB30389F4200002C7C /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F281E9DA30389F4200002C7C /* OpenGLES.framework */; };
+		F281E9DD30389F4F00002C7C /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F281E9DC30389F4F00002C7C /* GLKit.framework */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		F281E9A430389A7100002C7C /* SawitTycoon.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SawitTycoon.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F281E9DA30389F4200002C7C /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
+		F281E9DC30389F4F00002C7C /* GLKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLKit.framework; path = System/Library/Frameworks/GLKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		F281E9B630389A7300002C7C /* Exceptions for "SawitTycoon" folder in "SawitTycoon" target */ = {
+		F281E9DE3038A1BA00002C7C /* Exceptions for "SawitTycoon" folder in "SawitTycoon" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -24,7 +31,7 @@
 		F281E9A630389A7100002C7C /* SawitTycoon */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				F281E9B630389A7300002C7C /* Exceptions for "SawitTycoon" folder in "SawitTycoon" target */,
+				F281E9DE3038A1BA00002C7C /* Exceptions for "SawitTycoon" folder in "SawitTycoon" target */,
 			);
 			path = SawitTycoon;
 			sourceTree = "<group>";
@@ -36,6 +43,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F281E9DD30389F4F00002C7C /* GLKit.framework in Frameworks */,
+				F281E9DB30389F4200002C7C /* OpenGLES.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -46,6 +55,7 @@
 			isa = PBXGroup;
 			children = (
 				F281E9A630389A7100002C7C /* SawitTycoon */,
+				F281E9D930389F4100002C7C /* Frameworks */,
 				F281E9A530389A7100002C7C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -56,6 +66,15 @@
 				F281E9A430389A7100002C7C /* SawitTycoon.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		F281E9D930389F4100002C7C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				F281E9DC30389F4F00002C7C /* GLKit.framework */,
+				F281E9DA30389F4200002C7C /* OpenGLES.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -145,7 +164,9 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2R4G9BAF3M;
 				GENERATE_INFOPLIST_FILE = YES;
+				"HEADER_SEARCH_PATHS[arch=*]" = "$(SRCROOT)/SawitTycoon";
 				INFOPLIST_FILE = SawitTycoon/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -163,6 +184,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				"SWIFT_OBJC_BRIDGING_HEADER[arch=*]" = "SawitTycoon/SawitTycoon-Bridging-Header.h";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -176,7 +198,9 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2R4G9BAF3M;
 				GENERATE_INFOPLIST_FILE = YES;
+				"HEADER_SEARCH_PATHS[arch=*]" = "$(SRCROOT)/SawitTycoon";
 				INFOPLIST_FILE = SawitTycoon/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -194,6 +218,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				"SWIFT_OBJC_BRIDGING_HEADER[arch=*]" = "SawitTycoon/SawitTycoon-Bridging-Header.h";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -207,7 +232,8 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_CXX_STANDARD_LIBRARY_HARDENING = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
@@ -259,6 +285,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				"SWIFT_OBJC_BRIDGING_HEADER[arch=*]" = "";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -270,7 +297,8 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_CXX_STANDARD_LIBRARY_HARDENING = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
