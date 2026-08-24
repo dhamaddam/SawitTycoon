@@ -134,6 +134,11 @@ public:
 
     // --- utilitas khusus testing/dev (BUKAN bagian gameplay normal — jangan dipanggil dari UI) ---
     void devAddMoney(double amount) { eco_.money += amount; }
+    // Mengacak kesehatan/nutrisi/status TBS seluruh kebun -- MURNI alat uji
+    // visual (spy variasi kanopi/warna dari vigor & pemucatan nutrisi bisa
+    // langsung terlihat, bukan nunggu berhari-hari game-time spt kondisi
+    // alami). Tidak dipakai jalur gameplay normal.
+    void devRandomizeConditions();
     std::string saveToJson() const;
     bool loadFromJson(const std::string& json);
 

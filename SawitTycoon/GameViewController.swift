@@ -39,6 +39,7 @@ final class GameViewController: GLKViewController {
     private let hudMoney = UILabel()
     private let hudDay = UILabel()
     private let hudTph = UILabel()
+    private let hudBlock = UILabel()
     private let panelTitle = UILabel()
     private let actionStack = UIStackView()
     // Kontainer luar (panelTitle + baris tombol aksi) -- disimpan spy bar aksi
@@ -155,7 +156,7 @@ final class GameViewController: GLKViewController {
     override func glkView(_ view: GLKView, drawIn rect: CGRect) {
         if let t = inspectorTree {
             engine.glDrawTreeInspectorAge(t.ageYears, frond: t.frond, health: t.health, ffb: t.ffb,
-                                           hasTbsReady: t.hasTbsReady, yawSpin: Float(inspectorYaw), panY: inspectorPanY)
+                                           hasTbsReady: t.hasTbsReady, yawSpin: Float(inspectorYaw), panY: inspectorPanY, nutrition: t.nutrition)
         } else {
             engine.glDrawFrameSelectedTreeId(selectedTreeId)
         }
@@ -266,6 +267,39 @@ final class GameViewController: GLKViewController {
             hudStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
             hudStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
             hudStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
+        ])
+
+        // Label ringkasan Block -- bukti visual PERTAMA dari hierarki Block yg
+        // dibangun sesi sebelumnya (murni API/backend, blm ada tampilan sama
+        // sekali sampai sekarang). Belum Estate/Block View penuh (itu nanti,
+        // butuh redesain kamera+UI besar) -- ini cuma strip info kecil dulu,
+        // supaya kerja kemarin tak terasa "menghilang" tanpa bukti.
+        hudBlock.textColor = UIColor(white: 0.95, alpha: 1)
+        hudBlock.font = .systemFont(ofSize: 11)
+        hudBlock.backgroundColor = UIColor(white: 0, alpha: 0.6)
+        hudBlock.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(hudBlock)
+        NSLayoutConstraint.activate([
+            hudBlock.topAnchor.constraint(equalTo: hudStack.bottomAnchor, constant: 6),
+            hudBlock.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
+        ])
+
+        // Tombol kecil -- alat uji visual, spy variasi kanopi (vigor & warna
+        // nutrisi) yg baru dibangun bisa langsung dicek tanpa nunggu hari
+        // game berlalu (hama/ganoderma alami baru muncul stlh berhari-hari).
+        let devBtn = UIButton(type: .system)
+        devBtn.setTitle("🔧 Uji Visual", for: .normal)
+        devBtn.setTitleColor(.white, for: .normal)
+        devBtn.titleLabel?.font = .systemFont(ofSize: 11)
+        devBtn.backgroundColor = UIColor(white: 0, alpha: 0.5)
+        devBtn.layer.cornerRadius = 6
+        devBtn.contentEdgeInsets = UIEdgeInsets(top: 4, left: 8, bottom: 4, right: 8)
+        devBtn.translatesAutoresizingMaskIntoConstraints = false
+        devBtn.addTarget(self, action: #selector(tapDevRandomize), for: .touchUpInside)
+        view.addSubview(devBtn)
+        NSLayoutConstraint.activate([
+            devBtn.topAnchor.constraint(equalTo: hudBlock.bottomAnchor, constant: 6),
+            devBtn.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
         ])
 
         panelTitle.textColor = UIColor(white: 0.95, alpha: 1)
@@ -646,6 +680,11 @@ final class GameViewController: GLKViewController {
         navHoldTimer = nil
     }
 
+    @objc private func tapDevRandomize() {
+        engine.devRandomizeConditions()
+        refreshTreesAndHud()
+    }
+
     @objc private func closeTreeInspector() {
         inspectorTree = nil
         inspectorCloseBtn?.isHidden = true
@@ -674,6 +713,13 @@ final class GameViewController: GLKViewController {
         hudMoney.text = "💰 Rp \(Int(engine.money()))"
         hudDay.text = "📅 Hari \(engine.day())"
         hudTph.text = "📦 TPH \(Int(engine.tphStock()))/\(Int(engine.tphCap()))"
+        if let b = engine.blockSummaries().first {
+            var line = "\(b.statusEmoji) Block \(b.name) — \(b.treeCount) pokok | \(b.healthyCount) sehat"
+            if b.hamaCount > 0 { line += " | \(b.hamaCount) hama" }
+            if b.ganodermaCount > 0 { line += " | \(b.ganodermaCount) ganoderma" }
+            if b.readyToHarvestCount > 0 { line += " | \(b.readyToHarvestCount) siap panen" }
+            hudBlock.text = line
+        }
         if selectedTreeId >= 0, let t = trees.first(where: { $0.treeId == selectedTreeId }) {
             let snap = (id: t.treeId, health: t.health, ffb: t.ffb, frond: t.frond, hasTbsReady: t.hasTbsReady)
             if lastRenderedTreeSnapshot == nil || snap != lastRenderedTreeSnapshot! {

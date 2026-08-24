@@ -98,6 +98,7 @@ using namespace sawit;
         v.ffb = (NSInteger)t.ffb;
         v.health = (NSInteger)t.health;
         v.hasTbsReady = t.hasTbsReady;
+        v.nutrition = (float)t.nutrition;
         [out addObject:v];
     }
     return out;
@@ -122,6 +123,7 @@ using namespace sawit;
     return out;
 }
 - (NSInteger)blockIdForTree:(NSInteger)treeId { return _engine.blockIdForTree((int)treeId); }
+- (void)devRandomizeConditions { _engine.devRandomizeConditions(); }
 
 - (NSArray<NSString *> *)pollEventsRaw {
     NSMutableArray<NSString *> *out = [NSMutableArray arrayWithCapacity:_pendingEvents.size()];
@@ -141,8 +143,8 @@ using namespace sawit;
 - (void)glInit { sawit::gl::init(); }
 - (void)glResizeWidth:(int)width height:(int)height { sawit::gl::resize(width, height); }
 - (void)glSetCameraPanX:(float)panX panZ:(float)panZ dist:(float)dist yaw:(float)yaw { sawit::gl::setCamera(panX, panZ, dist, yaw); }
-- (void)glDrawTreeInspectorAge:(float)ageYears frond:(float)frond health:(NSInteger)health ffb:(NSInteger)ffb hasTbsReady:(BOOL)hasTbsReady yawSpin:(float)yawSpin panY:(float)panY {
-    sawit::gl::drawTreeInspectorFrame(ageYears, frond, (int)health, (int)ffb, hasTbsReady, yawSpin, panY);
+- (void)glDrawTreeInspectorAge:(float)ageYears frond:(float)frond health:(NSInteger)health ffb:(NSInteger)ffb hasTbsReady:(BOOL)hasTbsReady yawSpin:(float)yawSpin panY:(float)panY nutrition:(float)nutrition {
+    sawit::gl::drawTreeInspectorFrame(ageYears, frond, (int)health, (int)ffb, hasTbsReady, yawSpin, panY, nutrition);
 }
 - (void)glDrawFrameSelectedTreeId:(NSInteger)selectedTreeId {
     sawit::gl::beginFrame();
@@ -150,7 +152,7 @@ using namespace sawit;
     int today = _engine.economy().day;
     for (const Tree &t : _engine.trees()) {
         sawit::gl::drawPalm((float)t.x, (float)t.z, (float)t.ageYears, (float)t.frond,
-                             (int)t.health, (int)t.ffb, (NSInteger)t.id == selectedTreeId);
+                             (int)t.health, (int)t.ffb, (NSInteger)t.id == selectedTreeId, (float)t.nutrition);
         // TBS hasil panen tergeletak di dasar pohon, menunggu diangkut (celah
         // baru diperbaiki -- sebelumnya buah yg sudah dipanen "hilang" begitu
         // saja secara visual sampai worker mengangkutnya).

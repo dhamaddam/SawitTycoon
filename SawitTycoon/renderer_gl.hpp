@@ -23,7 +23,10 @@ void setCamera(float panX, float panZ, float distance, float yaw);
 void beginFrame();
 void drawGround();
 // health: 0=sehat,1=hama,2=ganoderma,3=mati ; ffb: 0=none,1=growing,2=ripe,3=overripe
-void drawPalm(float x, float z, float ageYears, float frond, int health, int ffb, bool selected);
+// nutrition (0..1): mempengaruhi KERAPATAN kanopi (proxy visual defisiensi
+// N/K/air) -- review eksternal "visualisasi state biologis": pohon jadi
+// indikator gameplay yg bisa dibaca dari kejauhan, bukan sekadar dekorasi.
+void drawPalm(float x, float z, float ageYears, float frond, int health, int ffb, bool selected, float nutrition);
 // Karakter pekerja sederhana (badan+kepala+topi, gaya sama dgn pohon) — SEBELUMNYA
 // TIDAK ADA sama sekali (pekerja disimulasikan di engine tapi tak pernah digambar).
 // carrying=true menampilkan gumpalan TBS kecil di tangan (visual fase angkut->TPH).
@@ -96,7 +99,7 @@ void drawGate(float x, float z, float facingRad);
 //                                 pemanggil, supaya pemain bisa lihat dari akar
 //                                 (y=0) sampai puncak mahkota. Sebelumnya kamera
 //                                 inspector terkunci total tanpa cara menggeser.
-void drawTreeInspectorFrame(float ageYears, float frond, int health, int ffb, bool hasTbsReady, float yawSpin, float panY);
+void drawTreeInspectorFrame(float ageYears, float frond, int health, int ffb, bool hasTbsReady, float yawSpin, float panY, float nutrition);
 
 void endFrame();
 

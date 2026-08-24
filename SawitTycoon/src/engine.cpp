@@ -196,6 +196,29 @@ int Engine::blockIdForTree(int treeId) const {
     return -1;
 }
 
+void Engine::devRandomizeConditions(){
+    for (auto& t : trees_){
+        double r = randUnit_();
+        if (r < 0.08) t.health = HealthState::Ganoderma;
+        else if (r < 0.20) t.health = HealthState::Hama;
+        else if (r < 0.23) t.health = HealthState::Mati;
+        else t.health = HealthState::Sehat;
+        t.nutrition = randUnit_(); // 0..1 penuh (bukan cuma 0.6-0.9 spt newGame()) spy ekstrem jg kelihatan
+        if (t.health != HealthState::Mati){
+            double rf = randUnit_();
+            if (rf < 0.25) t.ffb = FfbState::None;
+            else if (rf < 0.55) t.ffb = FfbState::Growing;
+            else if (rf < 0.85) t.ffb = FfbState::Ripe;
+            else t.ffb = FfbState::Overripe;
+        } else {
+            t.ffb = FfbState::None;
+        }
+        emit(EventType::TreeChanged, "", t.id);
+    }
+    emit(EventType::HudChanged);
+    emit(EventType::Toast, "Kondisi kebun diacak (mode uji visual)");
+}
+
 // ---------------------------------------------------------------------------
 // GAME LOOP
 // ---------------------------------------------------------------------------

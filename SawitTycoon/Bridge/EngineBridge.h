@@ -12,6 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) NSInteger ffb;     // 0=none,1=growing,2=ripe,3=overripe
 @property (nonatomic) NSInteger health;  // 0=sehat,1=hama,2=ganoderma,3=mati
 @property (nonatomic) BOOL hasTbsReady;
+@property (nonatomic) float nutrition;
 @property (nonatomic, readonly) BOOL isMature; // >= ambang umur egrek
 @end
 
@@ -85,6 +86,8 @@ NS_ASSUME_NONNULL_BEGIN
 /// Estate/Block View menyusul di sesi berikutnya.
 - (NSArray<SawitBlockSummary *> *)blockSummaries;
 - (NSInteger)blockIdForTree:(NSInteger)treeId;
+/// Alat uji visual -- acak kondisi kebun tanpa perlu tunggu hari.
+- (void)devRandomizeConditions;
 /// Setiap elemen berformat "type|text|treeId" (type: 0=Toast,1=FlyMoney,2=TreeChanged,3=HudChanged,4=ScreenChanged).
 - (NSArray<NSString *> *)pollEventsRaw;
 /// Log aktivitas PERMANEN (beda dgn pollEventsRaw yg sekali poll lalu hilang) --
@@ -102,7 +105,7 @@ NS_ASSUME_NONNULL_BEGIN
 /// Inspector Pohon: render close-up 1 pohon berputar otomatis -- MENGGANTIKAN
 /// pendekatan WKWebView/tree_detail.html sepenuhnya (tdk pakai HTML lagi).
 /// Frame TERPISAH (beginFrame/endFrame sendiri) drpd glDrawFrameSelectedTreeId.
-- (void)glDrawTreeInspectorAge:(float)ageYears frond:(float)frond health:(NSInteger)health ffb:(NSInteger)ffb hasTbsReady:(BOOL)hasTbsReady yawSpin:(float)yawSpin panY:(float)panY;
+- (void)glDrawTreeInspectorAge:(float)ageYears frond:(float)frond health:(NSInteger)health ffb:(NSInteger)ffb hasTbsReady:(BOOL)hasTbsReady yawSpin:(float)yawSpin panY:(float)panY nutrition:(float)nutrition;
 - (void)glDrawFrameSelectedTreeId:(NSInteger)selectedTreeId;
 - (void)screenToWorldX:(float)sx y:(float)sy outX:(float *)outX outZ:(float *)outZ;
 /// Pergeseran pan (dunia) yg benar dari titik layar awal->akhir 1 gesture drag —

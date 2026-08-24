@@ -314,7 +314,7 @@ void drawGround(){
     }
 }
 
-void drawPalm(float x, float z, float ageYears, float frond, int health, int ffb, bool selected){
+void drawPalm(float x, float z, float ageYears, float frond, int health, int ffb, bool selected, float nutrition){
     (void)frond; // mesh STL yg dibaked adalah bentuk TETAP -- tidak bisa ditekuk per parameter
                  // spt versi prosedural sebelumnya (lihat catatan "Yang belum ada" di README)
     float trunkH = treeTrunkHeight(ageYears); // satu sumber kebenaran, dipakai jg oleh hitTestDistance & JNI/bridge
@@ -337,6 +337,17 @@ void drawPalm(float x, float z, float ageYears, float frond, int health, int ffb
     if (health==1) { gR=0.541f; gG=0.604f; gB=0.184f; gdR=gR*0.8f; gdG=gG*0.8f; gdB=gB*0.8f; }       // hama -> kekuningan
     else if (health==2) { gR=0.353f; gG=0.420f; gB=0.227f; gdR=gR*0.8f; gdG=gG*0.8f; gdB=gB*0.8f; }  // ganoderma -> layu
     else if (health==3) { gR=0.42f; gG=0.35f; gB=0.24f; gdR=gR*0.85f; gdG=gG*0.85f; gdB=gB*0.85f; }  // mati -> coklat
+    else {
+        // Pohon SEHAT tapi nutrisi rendah -> warna kanopi PUCAT/kusam, bukan
+        // cuma lebih kecil (vigor, lihat bawah) -- dokumen desain eksplisit:
+        // "Nutrient Stress: sedikit lebih sparse / PALE". Diblend ke arah
+        // hijau-kuning kusam sebanding (1-nutrition), maks 55% blend spy
+        // tetap terbaca sbg "sehat" bukan sakit (itu jatah health==1/2).
+        float paleness = (1.0f - nutrition) * 0.55f;
+        float paleR=0.58f, paleG=0.58f, paleB=0.40f;
+        gR += (paleR-gR)*paleness; gG += (paleG-gG)*paleness; gB += (paleB-gB)*paleness;
+        gdR += (paleR*0.82f-gdR)*paleness; gdG += (paleG*0.82f-gdG)*paleness; gdB += (paleB*0.82f-gdB)*paleness;
+    }
 
     // --- variasi spiral pelepah kiri/kanan antar pohon (filotaksis) ---
     // Literatur: pohon sawit sungguhan menunjukkan filotaksis spiral 5/13 (deret
@@ -363,6 +374,25 @@ void drawPalm(float x, float z, float ageYears, float frond, int health, int ffb
     //     dari posisi x,z, BUKAN acak tiap frame) + jitter ukuran ringan (±8%),
     //     murah scr performa krn cuma parameter matrix GPU (lihat drawTris),
     //     BUKAN membangun ulang geometri per pohon. ---
+    // --- kerapatan kanopi merespons KESEHATAN & NUTRISI SUNGGUHAN, bukan cuma
+    //     warna -- review eksternal "visualisasi state biologis": "Healthy:
+    //     crown density penuh (██████████), Mild stress: menyusut sedikit
+    //     (████████░░), Severe: jauh lebih sparse (█████░░░░░)". Diterapkan
+    //     sbg SCALE tambahan HANYA ke kanopi+buah (bukan batang -- tinggi
+    //     batang mencerminkan UMUR, bukan state kesehatan sesaat), proxy
+    //     visual defisiensi N/K/air TANPA perlu mesh terpisah (sesuai
+    //     rekomendasi V1: "belum perlu 3 baked mesh, pakai scale variation").
+    float vigor;
+    // Rentang dilebarkan dari 0.70-1.00 -- versi lama nyaris tak terlihat di
+    // hari-hari awal (blm ada pohon sakit) krn tenggelam di antara jitter
+    // ukuran acak (sizeJitter) yg magnitudonya mirip. 0.55 dipilih spy pohon
+    // nutrisi rendah SUDAH terlihat lebih kerdil sejak hari 1, bukan cuma
+    // terasa saat penyakit muncul berminggu-minggu kemudian.
+    if (health == 0) vigor = 0.55f + nutrition * 0.45f;      // sehat: murni nutrisi (0.55..1.00)
+    else if (health == 1) vigor = 0.80f;                      // hama: kanopi termakan, menyusut
+    else if (health == 2) vigor = 0.62f;                      // ganoderma: fronds layu/patah, jauh menyusut
+    else vigor = 0.45f;                                        // mati: sisa kanopi kering
+
     seed ^= seed<<13; seed ^= seed>>17; seed ^= seed<<5; // maju state, ambil angka acak lain dr seed yg sama
     float treeYaw = (seed & 0xFFFFFF) / float(0xFFFFFF) * 6.28318f;
     seed ^= seed<<13; seed ^= seed>>17; seed ^= seed<<5;
@@ -374,9 +404,10 @@ void drawPalm(float x, float z, float ageYears, float frond, int health, int ffb
     //     parameter scale drawTris (bukan dihitung ulang per-vertex spt versi
     //     prosedural, jadi lebih ringan). ---
     float Sc = S_crown * sizeJitter;
+    float ScCanopy = Sc * vigor; // kanopi+buah ikut menyusut sesuai state, batang TIDAK
     drawTris(kPalmIconTrunk, kPalmIconTrunk_COUNT, trunkR,trunkG,trunkB, 1.0f, x,0,z, Sc*mirrorSign,Sc,Sc, treeYaw);
-    drawTris(kPalmIconCrownLight, kPalmIconCrownLight_COUNT, gR,gG,gB, 1.0f, x,0,z, Sc*mirrorSign,Sc,Sc, treeYaw);
-    drawTris(kPalmIconCrownDark,  kPalmIconCrownDark_COUNT,  gdR,gdG,gdB, 1.0f, x,0,z, Sc*mirrorSign,Sc,Sc, treeYaw);
+    drawTris(kPalmIconCrownLight, kPalmIconCrownLight_COUNT, gR,gG,gB, 1.0f, x,0,z, ScCanopy*mirrorSign,ScCanopy,ScCanopy, treeYaw);
+    drawTris(kPalmIconCrownDark,  kPalmIconCrownDark_COUNT,  gdR,gdG,gdB, 1.0f, x,0,z, ScCanopy*mirrorSign,ScCanopy,ScCanopy, treeYaw);
 
     // --- buah: sekarang tampil SEJAK status "Growing" (bukan cuma Ripe/Overripe)
     //     dgn progres warna hijau->oranye->merah -- review eksternal poin #4:
@@ -389,7 +420,7 @@ void drawPalm(float x, float z, float ageYears, float frond, int health, int ffb
         if (ffb==1){ fruitR=0.290f; fruitG=0.541f; fruitB=0.220f; }      // Growing: hijau (belum matang)
         else if (ffb==2){ fruitR=0.941f; fruitG=0.490f; fruitB=0.180f; } // Ripe: oranye cerah
         else { fruitR=0.612f; fruitG=0.161f; fruitB=0.114f; }            // Overripe: merah tua
-        drawTris(kPalmIconFruit, kPalmIconFruit_COUNT, fruitR,fruitG,fruitB, 1.0f, x,0,z, Sc*mirrorSign,Sc,Sc, treeYaw);
+        drawTris(kPalmIconFruit, kPalmIconFruit_COUNT, fruitR,fruitG,fruitB, 1.0f, x,0,z, ScCanopy*mirrorSign,ScCanopy,ScCanopy, treeYaw);
     }
 
     // --- highlight seleksi: cincin tipis kuning transparan di dasar pohon ---
@@ -853,7 +884,7 @@ void drawGate(float x, float z, float facingRad){
     drawTris(roof.data(), (int)(roof.size()/3), 0.55f,0.27f,0.18f, 1.0f, x,0,z, 1,1,1);         // atap coklat
 }
 
-void drawTreeInspectorFrame(float ageYears, float frond, int health, int ffb, bool hasTbsReady, float yawSpin, float panY){
+void drawTreeInspectorFrame(float ageYears, float frond, int health, int ffb, bool hasTbsReady, float yawSpin, float panY, float nutrition){
     // Simpan kamera game utama SEBELUM diubah -- dipulihkan di akhir supaya
     // drawFrame() normal berikutnya tidak "meloncat" krn state kamera global
     // (g_panX/g_panZ/g_panY/g_dist/g_yaw) ini dipakai bersama oleh scene utama.
@@ -886,7 +917,7 @@ void drawTreeInspectorFrame(float ageYears, float frond, int health, int ffb, bo
     }
     drawTris(pedestal.data(), (int)(pedestal.size()/3), 0.694f,0.616f,0.475f, 1.0f, 0,0,0, 1,1,1);
 
-    drawPalm(0.0f, 0.0f, ageYears, frond, health, ffb, false);
+    drawPalm(0.0f, 0.0f, ageYears, frond, health, ffb, false, nutrition);
     if (hasTbsReady) drawTbsPile(0.0f, 0.0f);
 
     // Pulihkan kamera game utama.
