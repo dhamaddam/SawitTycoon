@@ -124,6 +124,9 @@ using namespace sawit;
 }
 - (NSInteger)blockIdForTree:(NSInteger)treeId { return _engine.blockIdForTree((int)treeId); }
 - (void)devRandomizeConditions { _engine.devRandomizeConditions(); }
+- (double)pricePupuk { return _engine.config().pricePupuk; }
+- (double)pricePestisida { return _engine.config().pricePestisida; }
+- (double)priceFungisida { return _engine.config().priceFungisida; }
 
 - (NSArray<NSString *> *)pollEventsRaw {
     NSMutableArray<NSString *> *out = [NSMutableArray arrayWithCapacity:_pendingEvents.size()];

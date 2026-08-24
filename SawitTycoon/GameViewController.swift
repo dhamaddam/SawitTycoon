@@ -449,11 +449,65 @@ final class GameViewController: GLKViewController {
 
     // Target-action terpisah per jenis (bukan closure capturing self) — sama
     // spt pola tombol aksi pohon di atas, lebih aman dari retain-cycle.
-    @objc private func tapPanenSemua() { bulkActionFeedback("Panen Semua", engine.actionPanenSemua()) }
-    @objc private func tapAngkutSemua() { bulkActionFeedback("Angkut Semua", engine.actionAngkutSemua()) }
-    @objc private func tapPupukSemua() { bulkActionFeedback("Pupuk Semua", engine.actionPupukSemua()) }
-    @objc private func tapPestisidaSemua() { bulkActionFeedback("Semprot Semua", engine.actionPestisidaSemua()) }
-    @objc private func tapFungisidaSemua() { bulkActionFeedback("Obati Semua", engine.actionFungisidaSemua()) }
+    // Semua sekarang lewat confirmBulkAction -- dialog konfirmasi (jumlah pokok
+    // + estimasi biaya dari Block) SEBELUM eksekusi. Review eksternal poin 10:
+    // "jangan langsung 700 pokok secara magic, munculkan estimasi dulu".
+    @objc private func tapPanenSemua() {
+        let n = Int(engine.blockSummaries().first?.readyToHarvestCount ?? 0)
+        confirmBulkAction("Panen Semua", previewCount: n, unitPrice: nil) { [weak self] in
+            Int(self?.engine.actionPanenSemua() ?? 0)
+        }
+    }
+    @objc private func tapAngkutSemua() {
+        let n = Int(engine.blockSummaries().first?.tbsAwaitingPickupCount ?? 0)
+        confirmBulkAction("Angkut Semua", previewCount: n, unitPrice: nil) { [weak self] in
+            Int(self?.engine.actionAngkutSemua() ?? 0)
+        }
+    }
+    @objc private func tapPupukSemua() {
+        guard let b = engine.blockSummaries().first else { return }
+        let n = Int(b.treeCount - b.deadCount)
+        confirmBulkAction("Pupuk Semua", previewCount: n, unitPrice: engine.pricePupuk()) { [weak self] in
+            Int(self?.engine.actionPupukSemua() ?? 0)
+        }
+    }
+    @objc private func tapPestisidaSemua() {
+        let n = Int(engine.blockSummaries().first?.hamaCount ?? 0)
+        confirmBulkAction("Semprot Semua", previewCount: n, unitPrice: engine.pricePestisida()) { [weak self] in
+            Int(self?.engine.actionPestisidaSemua() ?? 0)
+        }
+    }
+    @objc private func tapFungisidaSemua() {
+        let n = Int(engine.blockSummaries().first?.ganodermaCount ?? 0)
+        confirmBulkAction("Obati Semua", previewCount: n, unitPrice: engine.priceFungisida()) { [weak self] in
+            Int(self?.engine.actionFungisidaSemua() ?? 0)
+        }
+    }
+
+    private func confirmBulkAction(_ label: String, previewCount: Int, unitPrice: Double?, action: @escaping () -> Int) {
+        guard previewCount > 0 else {
+            showToast("\(label): tidak ada pokok yg memenuhi syarat saat ini")
+            return
+        }
+        let blockName = engine.blockSummaries().first?.name ?? "?"
+        let costLine: String
+        if let price = unitPrice {
+            costLine = "\nEstimasi biaya: Rp \(Int(Double(previewCount) * price))"
+        } else {
+            costLine = "\nGratis (tanpa biaya)"
+        }
+        let alert = UIAlertController(
+            title: label,
+            message: "Block \(blockName): \(previewCount) pokok akan diproses.\(costLine)\n\nLanjutkan?",
+            preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Batal", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Terapkan", style: .default) { [weak self] _ in
+            guard let self = self else { return }
+            let done = action()
+            self.bulkActionFeedback(label, done)
+        })
+        present(alert, animated: true)
+    }
 
     private func bulkActionFeedback(_ label: String, _ count: Int) {
         showToast("\(label): \(count) pohon selesai sekaligus")

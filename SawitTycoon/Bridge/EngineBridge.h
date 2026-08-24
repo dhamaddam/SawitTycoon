@@ -88,6 +88,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSInteger)blockIdForTree:(NSInteger)treeId;
 /// Alat uji visual -- acak kondisi kebun tanpa perlu tunggu hari.
 - (void)devRandomizeConditions;
+/// Harga satuan aksi -- dipakai dialog konfirmasi estimasi biaya sebelum
+/// aksi massal dieksekusi.
+- (double)pricePupuk;
+- (double)pricePestisida;
+- (double)priceFungisida;
 /// Setiap elemen berformat "type|text|treeId" (type: 0=Toast,1=FlyMoney,2=TreeChanged,3=HudChanged,4=ScreenChanged).
 - (NSArray<NSString *> *)pollEventsRaw;
 /// Log aktivitas PERMANEN (beda dgn pollEventsRaw yg sekali poll lalu hilang) --
