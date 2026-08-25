@@ -196,6 +196,19 @@ struct HrState {
     void add(const std::string& key, int n = 1);
 };
 
+// Ringkasan status LIVE 1 jenjang SDM -- dipakai UI dialog rekrut (blm ada
+// UI-nya sebelum ini, dilaporkan pengguna: tombol rekrut tak ada sama sekali
+// meski fungsi rekrutLevel() sudah lama ada di engine).
+struct HrLevelInfo {
+    std::string key, name, icon, desc, cite;
+    int count = 0;
+    double cost = 0;
+    double salary = 0;
+    bool prereqMet = true;    // prasyarat jabatan (mis. 3 buruh dulu) terpenuhi?
+    bool underMax = true;     // blm capai batas maksimum jabatan ini (mis. Manager cuma 1)?
+    std::string prereqDesc;   // deskripsi prasyarat utk ditampilkan, kosong kalau tak ada
+};
+
 // ---------------------------------------------------------------------------
 // PKS
 // ---------------------------------------------------------------------------

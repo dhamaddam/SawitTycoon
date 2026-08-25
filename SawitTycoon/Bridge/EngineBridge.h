@@ -34,6 +34,20 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) NSString *statusEmoji;
 @end
 
+/// Ringkasan status LIVE 1 jenjang SDM -- fondasi dialog rekrut.
+@interface SawitHrLevelInfo : NSObject
+@property (nonatomic, copy) NSString *key;
+@property (nonatomic, copy) NSString *name;
+@property (nonatomic, copy) NSString *icon;
+@property (nonatomic) NSInteger count;
+@property (nonatomic) double cost;
+@property (nonatomic) double salary;
+@property (nonatomic) BOOL prereqMet;
+@property (nonatomic) BOOL underMax;
+@property (nonatomic, copy) NSString *prereqDesc;
+@property (nonatomic, readonly) BOOL recruitable;
+@end
+
 /// Satu-satunya pintu ke C++ (Engine + renderer GL) dari sisi Swift.
 /// Class ini murni Objective-C di permukaan (aman dipanggil dari Swift biasa);
 /// implementasinya (.mm) yang berisi C++ (sawit::Engine).
@@ -93,6 +107,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (double)pricePupuk;
 - (double)pricePestisida;
 - (double)priceFungisida;
+/// Fondasi dialog rekrut SDM -- rekrutLevel() sudah lama ada di engine tapi
+/// tak pernah tersambung ke UI (dilaporkan pengguna: error "harus rekrut
+/// asisten dulu" tp tombol rekrut tak ada sama sekali).
+- (NSArray<SawitHrLevelInfo *> *)hrLevelInfos;
 /// Setiap elemen berformat "type|text|treeId" (type: 0=Toast,1=FlyMoney,2=TreeChanged,3=HudChanged,4=ScreenChanged).
 - (NSArray<NSString *> *)pollEventsRaw;
 /// Log aktivitas PERMANEN (beda dgn pollEventsRaw yg sekali poll lalu hilang) --

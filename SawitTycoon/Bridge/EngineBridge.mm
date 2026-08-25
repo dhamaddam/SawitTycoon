@@ -21,6 +21,10 @@ using namespace sawit;
 }
 @end
 
+@implementation SawitHrLevelInfo
+- (BOOL)recruitable { return self.prereqMet && self.underMax; }
+@end
+
 // ---------------------------------------------------------------------------
 @interface EngineBridge () {
     Engine _engine;                          // objek C++ langsung sbg ivar — sah di file .mm (Obj-C++)
@@ -127,6 +131,23 @@ using namespace sawit;
 - (double)pricePupuk { return _engine.config().pricePupuk; }
 - (double)pricePestisida { return _engine.config().pricePestisida; }
 - (double)priceFungisida { return _engine.config().priceFungisida; }
+- (NSArray<SawitHrLevelInfo *> *)hrLevelInfos {
+    NSMutableArray<SawitHrLevelInfo *> *out = [NSMutableArray array];
+    for (const HrLevelInfo &i : _engine.hrLevelInfos()) {
+        SawitHrLevelInfo *v = [SawitHrLevelInfo new];
+        v.key = [NSString stringWithUTF8String:i.key.c_str()];
+        v.name = [NSString stringWithUTF8String:i.name.c_str()];
+        v.icon = [NSString stringWithUTF8String:i.icon.c_str()];
+        v.count = i.count;
+        v.cost = i.cost;
+        v.salary = i.salary;
+        v.prereqMet = i.prereqMet;
+        v.underMax = i.underMax;
+        v.prereqDesc = [NSString stringWithUTF8String:i.prereqDesc.c_str()];
+        [out addObject:v];
+    }
+    return out;
+}
 
 - (NSArray<NSString *> *)pollEventsRaw {
     NSMutableArray<NSString *> *out = [NSMutableArray arrayWithCapacity:_pendingEvents.size()];

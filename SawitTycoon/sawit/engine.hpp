@@ -80,6 +80,9 @@ public:
 
     // --- aksi pemain: SDM ---
     bool rekrutLevel(const std::string& key);
+    // Ringkasan status LIVE semua jenjang SDM (biaya, jumlah, kelayakan) --
+    // dipakai UI dialog rekrut.
+    std::vector<HrLevelInfo> hrLevelInfos() const;
     double hrEfficiency() const;
     double totalDailySalary() const;
 

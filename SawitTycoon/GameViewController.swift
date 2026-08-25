@@ -322,6 +322,24 @@ final class GameViewController: GLKViewController {
             landBtn.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
         ])
 
+        // Tombol SDM -- BUG LAMA diperbaiki: rekrutLevel() sudah lama ada di
+        // EngineBridge, tapi tak pernah tersambung ke UI mana pun (dilaporkan
+        // pengguna: error "harus rekrut asisten dulu" tp tombol rekrut tak ada).
+        let hrBtn = UIButton(type: .system)
+        hrBtn.setTitle("👤 SDM", for: .normal)
+        hrBtn.setTitleColor(.white, for: .normal)
+        hrBtn.titleLabel?.font = .systemFont(ofSize: 11)
+        hrBtn.backgroundColor = UIColor(white: 0, alpha: 0.5)
+        hrBtn.layer.cornerRadius = 6
+        hrBtn.contentEdgeInsets = UIEdgeInsets(top: 4, left: 8, bottom: 4, right: 8)
+        hrBtn.translatesAutoresizingMaskIntoConstraints = false
+        hrBtn.addTarget(self, action: #selector(tapHr), for: .touchUpInside)
+        view.addSubview(hrBtn)
+        NSLayoutConstraint.activate([
+            hrBtn.topAnchor.constraint(equalTo: landBtn.bottomAnchor, constant: 6),
+            hrBtn.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
+        ])
+
         panelTitle.textColor = UIColor(white: 0.95, alpha: 1)
         panelTitle.font = .boldSystemFont(ofSize: 14)
         panelTitle.text = "Ketuk sebuah pokok"
@@ -752,6 +770,35 @@ final class GameViewController: GLKViewController {
         navHoldDir = 0
         navHoldTimer?.invalidate()
         navHoldTimer = nil
+    }
+
+    @objc private func tapHr() {
+        let infos = engine.hrLevelInfos()
+        let alert = UIAlertController(title: "👤 Rekrut SDM", message: nil, preferredStyle: .actionSheet)
+        for i in infos {
+            let status: String
+            if !i.underMax { status = "MAKS TERCAPAI" }
+            else if !i.prereqMet { status = "Butuh: \(i.prereqDesc)" }
+            else { status = "Rp \(Int(i.cost)) (gaji Rp \(Int(i.salary))/hari)" }
+            let title = "\(i.icon) \(i.name) (\(i.count)x) — \(status)"
+            alert.addAction(UIAlertAction(title: title, style: .default) { [weak self] _ in
+                guard let self = self else { return }
+                if !i.recruitable {
+                    self.showToast(!i.underMax ? "Sudah maksimum" : "Prasyarat belum terpenuhi: \(i.prereqDesc)")
+                    return
+                }
+                let ok = self.engine.rekrutLevel(i.key)
+                self.showToast(ok ? "\(i.name) berhasil direkrut!" : "Gagal -- uang tidak cukup")
+                self.refreshTreesAndHud()
+            })
+        }
+        alert.addAction(UIAlertAction(title: "Tutup", style: .cancel))
+        // iPad: actionSheet butuh sourceView/popover anchor, kalau tidak app crash
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = view
+            popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 0, height: 0)
+        }
+        present(alert, animated: true)
     }
 
     @objc private func tapLand() {

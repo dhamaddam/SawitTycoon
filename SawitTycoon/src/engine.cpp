@@ -826,6 +826,27 @@ bool Engine::rekrutLevel(const std::string& key){
     return true;
 }
 
+std::vector<HrLevelInfo> Engine::hrLevelInfos() const {
+    std::vector<HrLevelInfo> out;
+    out.reserve(cfg_.hrLevels.size());
+    for (const auto& def : cfg_.hrLevels){
+        HrLevelInfo info;
+        info.key = def.key; info.name = def.name; info.icon = def.icon;
+        info.desc = def.desc; info.cite = def.cite;
+        info.count = hr_.countFor(def.key);
+        info.cost = costFor_(def);
+        info.salary = def.salary;
+        info.prereqMet = prereqOk_(def);
+        info.underMax = maxOk_(def);
+        if (def.hasPrereq){
+            info.prereqDesc = "Butuh " + std::to_string(def.prereq.min) + "x " + def.prereq.key;
+            if (def.prereq.hasAlso) info.prereqDesc += " & " + std::to_string(def.prereq.alsoMin) + "x " + def.prereq.alsoKey;
+        }
+        out.push_back(info);
+    }
+    return out;
+}
+
 // ---------------------------------------------------------------------------
 // PKS
 // ---------------------------------------------------------------------------

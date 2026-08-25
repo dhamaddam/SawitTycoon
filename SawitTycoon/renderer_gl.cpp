@@ -269,7 +269,41 @@ void drawGround(float originX, float originZ){
         originX-45,0,originZ-38,  originX+45,0,originZ-38,  originX+45,0,originZ+38,
         originX-45,0,originZ-38,  originX+45,0,originZ+38,  originX-45,0,originZ+38,
     };
-    drawTris(quad, 6, 0.694f, 0.616f, 0.475f, 1.0f, 0,0,0, 1,1,1); // #b19d79 tanah/pasir
+    // Warna dasar digelapkan/dilebur ke arah coklat tanah lateritik pekerja
+    // sungguhan (bukan lagi "pasir pantai" terang rata spt sebelumnya --
+    // dilaporkan pengguna terasa kurang alami) -- #8a7355 alih2 #b19d79.
+    drawTris(quad, 6, 0.541f, 0.451f, 0.333f, 1.0f, 0,0,0, 1,1,1);
+
+    // Bercak variasi tanah -- pecah kesan warna FLAT/rata satu warna, meniru
+    // variasi kelembapan/kepadatan/warna tanah sungguhan (sebagian lbh gelap
+    // krn lembap/bekas injakan, sebagian lbh terang krn kering, sedikit
+    // kehijauan krn lumut/gulma tipis di sela). Digabung per-jenis jd 1 draw
+    // call spy tetap ringan. Seed ikut originX/Z spy tiap block polanya beda.
+    {
+        unsigned seedV = 0xB17Cu ^ (unsigned)(originX*271.0f) ^ (unsigned)(originZ*337.0f);
+        auto frandV=[&](){ seedV^=seedV<<13; seedV^=seedV>>17; seedV^=seedV<<5; return (seedV&0xFFFFFF)/float(0xFFFFFF); };
+        std::vector<float> darkPatches, lightPatches, mossPatches;
+        for (int i=0;i<70;i++){
+            float px = originX + (frandV()-0.5f)*88.0f;
+            float pz = originZ + (frandV()-0.5f)*74.0f;
+            float r = 1.5f + frandV()*3.5f;
+            int sides = 7;
+            std::vector<float>* target;
+            float pick = frandV();
+            if (pick < 0.5f) target = &darkPatches;      // lbh gelap (lembap/bekas injakan) -- paling umum
+            else if (pick < 0.85f) target = &lightPatches; // lbh terang (kering)
+            else target = &mossPatches;                    // kehijauan tipis (lumut/gulma jarang)
+            for (int s=0;s<sides;s++){
+                float a0=(float)s/sides*6.28318f, a1=(float)(s+1)/sides*6.28318f;
+                float rr0=r*(0.75f+frandV()*0.25f), rr1=r*(0.75f+frandV()*0.25f); // tepi tak rata sempurna
+                V3 c{px,0.002f,pz}, p0{px+std::cos(a0)*rr0,0.002f,pz+std::sin(a0)*rr0}, p1{px+std::cos(a1)*rr1,0.002f,pz+std::sin(a1)*rr1};
+                pushTri(*target, c, p0, p1);
+            }
+        }
+        if (!darkPatches.empty())  drawTris(darkPatches.data(),  (int)(darkPatches.size()/3),  0.451f,0.365f,0.255f, 0.35f, 0,0,0, 1,1,1);
+        if (!lightPatches.empty()) drawTris(lightPatches.data(), (int)(lightPatches.size()/3), 0.616f,0.529f,0.404f, 0.35f, 0,0,0, 1,1,1);
+        if (!mossPatches.empty())  drawTris(mossPatches.data(),  (int)(mossPatches.size()/3),  0.376f,0.400f,0.220f, 0.28f, 0,0,0, 1,1,1);
+    }
 
     // Tumpukan mulsa pelepah bekas tunas ("gawangan mati") di jalur ANTARA
     // baris tanam — literatur SOP: pelepah hasil tunas ditumpuk di gawangan
