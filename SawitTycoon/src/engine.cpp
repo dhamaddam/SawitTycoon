@@ -181,6 +181,7 @@ std::vector<BlockSummary> Engine::blockSummaries() const {
     for (const auto& b : blocks_) {
         BlockSummary s;
         s.id = b.id; s.name = b.name; s.ha = b.ha;
+        s.originX = b.originX; s.originZ = b.originZ;
         for (int i = b.treeStartIdx; i < b.treeEndIdx && i < (int)trees_.size(); ++i) {
             const Tree& t = trees_[i];
             s.treeCount++;

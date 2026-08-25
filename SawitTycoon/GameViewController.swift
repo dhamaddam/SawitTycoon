@@ -70,6 +70,9 @@ final class GameViewController: GLKViewController {
     // akar (y=0) sampai puncak mahkota. Direset ke 0 tiap buka inspector baru.
     private var inspectorPanY: Float = 0
     private var inspectorCloseBtn: UIButton?
+    // Block mana yg sedang ditampilkan di label HUD (0=Block A01 default) --
+    // berubah saat pemain lompat via tapBlockSelector().
+    private var currentBlockIndex: Int = 0
     private var inspectorNavUp: UIButton?
     private var inspectorNavDown: UIButton?
     private var inspectorNavLeft: UIButton?
@@ -278,6 +281,8 @@ final class GameViewController: GLKViewController {
         hudBlock.font = .systemFont(ofSize: 11)
         hudBlock.backgroundColor = UIColor(white: 0, alpha: 0.6)
         hudBlock.translatesAutoresizingMaskIntoConstraints = false
+        hudBlock.isUserInteractionEnabled = true
+        hudBlock.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(tapBlockSelector)))
         view.addSubview(hudBlock)
         NSLayoutConstraint.activate([
             hudBlock.topAnchor.constraint(equalTo: hudStack.bottomAnchor, constant: 6),
@@ -772,6 +777,35 @@ final class GameViewController: GLKViewController {
         navHoldTimer = nil
     }
 
+    @objc private func tapBlockSelector() {
+        let blocks = engine.blockSummaries()
+        if blocks.count <= 1 {
+            showToast("Baru ada 1 Block -- beli lahan dulu utk buat block baru")
+            return
+        }
+        let alert = UIAlertController(title: "Lompat ke Block", message: nil, preferredStyle: .actionSheet)
+        for (idx, b) in blocks.enumerated() {
+            var title = "\(b.statusEmoji) Block \(b.name) — \(b.treeCount) pokok"
+            if b.readyToHarvestCount > 0 { title += " | \(b.readyToHarvestCount) siap panen" }
+            alert.addAction(UIAlertAction(title: title, style: .default) { [weak self] _ in
+                guard let self = self else { return }
+                self.currentBlockIndex = idx
+                // Lompat kamera ke pusat block yg dipilih -- jarak/rotasi
+                // dipertahankan spy tetap terasa sbg "geser pandangan".
+                self.panX = b.originX
+                self.panZ = b.originZ
+                self.refreshTreesAndHud()
+                self.showToast("Kamera lompat ke Block \(b.name)")
+            })
+        }
+        alert.addAction(UIAlertAction(title: "Tutup", style: .cancel))
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = view
+            popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 0, height: 0)
+        }
+        present(alert, animated: true)
+    }
+
     @objc private func tapHr() {
         let infos = engine.hrLevelInfos()
         let alert = UIAlertController(title: "👤 Rekrut SDM", message: nil, preferredStyle: .actionSheet)
@@ -861,11 +895,15 @@ final class GameViewController: GLKViewController {
         hudMoney.text = "💰 Rp \(Int(engine.money()))"
         hudDay.text = "📅 Hari \(engine.day())"
         hudTph.text = "📦 TPH \(Int(engine.tphStock()))/\(Int(engine.tphCap()))"
-        if let b = engine.blockSummaries().first {
+        let allBlocks = engine.blockSummaries()
+        if currentBlockIndex >= allBlocks.count { currentBlockIndex = 0 }
+        if !allBlocks.isEmpty {
+            let b = allBlocks[currentBlockIndex]
             var line = "\(b.statusEmoji) Block \(b.name) — \(b.treeCount) pokok | \(b.healthyCount) sehat"
             if b.hamaCount > 0 { line += " | \(b.hamaCount) hama" }
             if b.ganodermaCount > 0 { line += " | \(b.ganodermaCount) ganoderma" }
             if b.readyToHarvestCount > 0 { line += " | \(b.readyToHarvestCount) siap panen" }
+            if allBlocks.count > 1 { line += "  ▾" } // isyarat visual bisa diketuk kalau block >1
             hudBlock.text = line
         }
         if selectedTreeId >= 0, let t = trees.first(where: { $0.treeId == selectedTreeId }) {

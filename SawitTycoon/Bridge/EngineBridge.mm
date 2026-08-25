@@ -122,6 +122,8 @@ using namespace sawit;
         v.deadCount = b.deadCount;
         v.readyToHarvestCount = b.readyToHarvestCount;
         v.tbsAwaitingPickupCount = b.tbsAwaitingPickupCount;
+        v.originX = (float)b.originX;
+        v.originZ = (float)b.originZ;
         [out addObject:v];
     }
     return out;

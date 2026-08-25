@@ -171,6 +171,7 @@ struct BlockSummary {
     int deadCount = 0;
     int readyToHarvestCount = 0;  // ffb Ripe atau Overripe
     int tbsAwaitingPickupCount = 0; // hasTbsReady==true (sudah dipanen, blm diangkut)
+    double originX = 0, originZ = 0; // pusat grid block -- dipakai UI melompat kamera ke sini
 };
 
 struct LandState {

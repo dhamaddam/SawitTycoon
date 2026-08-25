@@ -29,6 +29,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) NSInteger deadCount;
 @property (nonatomic) NSInteger readyToHarvestCount;
 @property (nonatomic) NSInteger tbsAwaitingPickupCount;
+@property (nonatomic) float originX;
+@property (nonatomic) float originZ;
 /// Status ringkas utk Estate View ("normal/perhatian/masalah/kritis") --
 /// ambang sederhana, bisa disesuaikan setelah UI-nya ada.
 @property (nonatomic, readonly) NSString *statusEmoji;
