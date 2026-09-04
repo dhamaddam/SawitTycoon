@@ -19,8 +19,36 @@ void resize(int width, int height);   // panggil dari onSurfaceChanged
 // yaw = rotasi kamera sekitar sumbu vertikal (radian), utk lihat 360°. Nilai
 // awal isometrik klasik = 0.7854 (45°), sama spt sebelum fitur rotasi ada.
 void setCamera(float panX, float panZ, float distance, float yaw);
+// Warna langit dinamis (siang/malam/hujan) -- fitur baru diminta pengguna.
+// Lihat catatan lengkap di renderer_gl.cpp. dayFrac: 0.0-1.0 (dari
+// eco_.dayTimer/dayLength engine), dipanggil SETIAP FRAME sebelum beginFrame().
+void setSkyState(float dayFrac, bool isRaining);
+// Kamera Gameplay Mode (third-person, avatar bisa digerakkan) -- dipanggil
+// tiap frame SEBELUM beginFrame() dgn posisi avatar terkini. effectiveDistBehind
+// dari engine.cameraSafeDistance() (collision terhadap pohon) -- lihat
+// catatan lengkap di renderer_gl.cpp.
+void updatePlayerCamera(float playerX, float playerZ, float playerFacingRad, float effectiveDistBehind);
+// Baca jarak zoom SAAT INI -- dipakai sbg parameter engine.cameraSafeDistance()
+// sebelum updatePlayerCamera() dipanggil.
+float getAvatarCamDistBehind();
+// Kamera "lihat sekeliling" via touch-drag (poin #4 laporan pengguna) --
+// lihat catatan lengkap di renderer_gl.cpp.
+void adjustCameraYawOffset(float deltaRad);
+float getCameraYawOffset();
+// Mendongak "lihat ke atas" -- fitur baru diminta pengguna. Lihat catatan lengkap di renderer_gl.cpp.
+void adjustAvatarLookUpOffset(float deltaY);
+float getAvatarLookUpOffset();
+float getAvatarCamEyeY();
+float getAvatarLookAtY();
+void resetCameraYawOffset();
 
 void beginFrame();
+// Efek visual hujan -- fitur baru diminta pengguna. Lihat catatan lengkap di renderer_gl.cpp.
+void drawRainEffect();
+// Matahari (terlihat saat siang) -- fitur baru diminta pengguna. Lihat catatan lengkap di renderer_gl.cpp.
+void drawSun(float dayFrac);
+// Latar belakang perbukitan bergelombang -- fitur baru diminta pengguna. Lihat catatan lengkap di renderer_gl.cpp.
+void drawDistantHills(float dayFrac);
 // originX/originZ: pusat grid block yg digambar tanahnya -- panggil SEKALI
 // per block (pemanggil/JNI/bridge iterasi semua block), bukan sekali global.
 void drawGround(float originX, float originZ);
@@ -38,7 +66,7 @@ void drawPalm(float x, float z, float ageYears, float frond, int health, int ffb
 // tinggi, animasi MENARIK KE BAWAH dgn hentakan), false=dodos (pokok rendah,
 // animasi MENDORONG KE ATAS) -- sesuai literatur teknik panen (lihat komentar
 // di implementasi drawWorker()).
-void drawWorker(float x, float z, int poseCode, bool usingEgrek);
+void drawWorker(float x, float z, int poseCode, bool usingEgrek, float facingRad=0.0f);
 
 // TBS hasil panen tergeletak di dasar pohon (menunggu diangkut) — literatur:
 // "penumpukan brondolan sebaiknya di sebelah tandan" & buah tak boleh lama
@@ -48,7 +76,15 @@ void drawTbsPile(float x, float z);
 
 // Tumpukan TBS di TPH, JUMLAH tumpukan = jumlah tandan di stok (dibatasi
 // wajar spy tak membebani draw call kalau stok sangat besar).
+// Bangunan PKS -- gudang proses + tangki/silo vertikal (jumlah sesuai
+// level). pulse 0..1 utk efek visual saat proses batch baru terjadi.
+void drawPksBuilding(float x, float z, int level, float pulse);
 void drawTphPile(float tphX, float tphZ, int stockCount);
+// Tumpukan pelepah hasil tunas di gawangan mati -- lihat catatan lengkap di
+// renderer_gl.cpp.
+void drawFrondPile(float gawanganCenterX, float gawanganCenterZ, float gawanganLength);
+// Visual jalan panen/inspeksi (gawangan hidup) -- lihat catatan lengkap di renderer_gl.cpp.
+void drawRoadStrip(float gawanganCenterX, float gawanganCenterZ, float gawanganLength);
 
 // Traktor+trailer berisi TBS, animasi keluar dari TPH menuju PKS saat truk
 // dikirim (murni visual, lihat catatan TruckState di types.hpp). facingRad =
@@ -57,6 +93,35 @@ void drawTruck(float x, float z, float facingRad);
 
 // Tanda kecil di atas pohon yg sudah dikerjakan aksi massal HARI INI --
 // kind: 0=panen,1=angkut,2=pupuk,3=pestisida,4=fungisida (lihat Tree::lastMarkKind).
+// Penanda TBS matang mencolok & persisten (beda dr drawActionMarker yg
+// transien) -- menembus di atas kanopi, terlihat dari kejauhan/zoom-out.
+// overripe: true=lewat matang (merah, mendesak), false=matang normal (oranye).
+// Toggle layer beacon TBS matang -- SATU sumber kebenaran shared kedua
+// platform (dipanggil dari JNI & EngineBridge).
+void setShowHarvestBeacon(bool show);
+bool getShowHarvestBeacon();
+// Estate View -- mode kamera zoom-out lihat SEMUA block sekaligus dgn
+// representasi sederhana (ubin datar berwarna), BUKAN geometri pohon detail
+// (lihat catatan lengkap di renderer_gl.cpp). layer: 0=Kesehatan,
+// 1=Nutrisi, 2=Kematangan.
+void setEstateViewMode(bool active, int layer);
+// Toggle Gameplay Mode (third-person) vs Management Mode (ortografis,
+// default). "Zoom terbatas" (adjustAvatarCamZoom) -- lihat catatan lengkap
+// di renderer_gl.cpp.
+void setGameplayModeActive(bool active);
+bool getGameplayModeActive();
+void adjustAvatarCamZoom(float delta);
+bool getEstateViewActive();
+int getEstateViewLayer();
+// Depth key painter's-algorithm yang benar utk kamera 360 derajat -- lebih
+// besar = lebih dekat kamera (digambar belakangan). Dipakai platform bridge
+// (JNI/EngineBridge) utk mengurutkan pohon sebelum digambar, spy urutan
+// tumpang-tindih visual benar dari sudut pandang manapun (lihat catatan
+// lengkap di renderer_gl.cpp).
+float depthKeyForYaw(float x, float z);
+void estateLayerColor(int layer, float badFraction, float* outR, float* outG, float* outB);
+void drawEstateBlockTile(float originX, float originZ, float r, float g, float b);
+void drawHarvestBeacon(float x, float z, float treeTopY, bool overripe);
 void drawActionMarker(float x, float z, float treeTopY, int kind);
 
 // Estimasi tinggi batang dari umur pohon -- rumus SAMA PERSIS dgn yg dipakai
@@ -76,6 +141,10 @@ void drawFarmhouse(float x, float z);
 // pohon -- ini murni dekoratif, meniru referensi visual (figur bertopi
 // kuning & berkemeja beda warna di antara kerumunan pemanen).
 void drawStaffFigure(float x, float z, int roleLevel);
+// Avatar pemain (Gameplay Mode) dari model GLB custom -- geometri statis,
+// goyangan idle sederhana (bukan walk-cycle penuh). Lihat catatan lengkap
+// di renderer_gl.cpp & farmer_avatar_mesh.hpp.
+void drawFarmerAvatar(float x, float z, float facingRad, bool moving);
 
 // Portal/gerbang palang merah-putih + pos jaga — praktik standar stasiun
 // penerimaan kebun sawit sungguhan (cek legalitas keluar-masuk kendaraan,
@@ -101,6 +170,8 @@ void drawGate(float x, float z, float facingRad);
 //                                 pemanggil, supaya pemain bisa lihat dari akar
 //                                 (y=0) sampai puncak mahkota. Sebelumnya kamera
 //                                 inspector terkunci total tanpa cara menggeser.
+// Dipanggil SEKALI saat inspector baru dibuka -- lihat catatan lengkap di renderer_gl.cpp.
+void beginTreeInspectorTransition();
 void drawTreeInspectorFrame(float ageYears, float frond, int health, int ffb, bool hasTbsReady, float yawSpin, float panY, float nutrition);
 
 void endFrame();
@@ -109,6 +180,22 @@ void endFrame();
 void worldToScreenY(float x, float y, float z, float* outScreenX, float* outScreenY);
 // Kompatibilitas: versi lama yang mengasumsikan y=0 (titik di permukaan tanah).
 void worldToScreen(float x, float z, float* outScreenX, float* outScreenY);
+// Viewport culling -- true kalau titik dunia (x,z) masih dlm jangkauan
+// pandang layar saat ini (dgn margin aman utk kanopi menjulang/melebar).
+// worldRadius: radius objek dlm unit dunia -- 0 (default) utk titik kecil
+// spt pohon individu, >0 utk objek besar spt Block (lihat catatan lengkap
+// di renderer_gl.cpp). Dipakai platform bridge (JNI/EngineBridge) SEBELUM
+// memanggil drawPalm/drawGround dkk, supaya objek di luar layar dilewati.
+bool isWorldPointVisible(float x, float z, float worldRadius=0.0f);
+// Blok depth-test karakter+bangunan -- mengatasi laporan pengguna #2. Lihat catatan lengkap di renderer_gl.cpp.
+void beginCharacterDepthBlock();
+void endCharacterDepthBlock();
+// Pengaturan grafik & sensitivitas kamera -- fitur baru diminta pengguna.
+// Lihat catatan lengkap di renderer_gl.cpp.
+void setGraphicsQuality(int level); // 0=Rendah, 1=Sedang, 2=Tinggi
+int getGraphicsQuality();
+void setCameraSensitivity(float mult); // rentang wajar 0.5-2.0, default 1.0
+float getCameraSensitivity();
 void screenToWorldOnGroundPlane(float screenX, float screenY, float* outX, float* outZ);
 
 // Hitung pergeseran PAN (dunia) yang benar dari sepasang titik layar (awal->akhir

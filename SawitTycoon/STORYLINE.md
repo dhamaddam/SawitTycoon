@@ -163,3 +163,7 @@ Tidak ada "menang" dalam arti sempit — tujuan akhirnya adalah kebun yang
 berjalan sehat, tim yang lengkap, dan pabrik sendiri yang berputar. Setelah
 itu, permainan jadi soal terus mengoptimalkan: efisiensi tim, luas lahan,
 dan kesehatan pokok dalam jangka panjang.
+
+dalam kelanjutannya dan realitanya kita masih dihadapkan dengan persoalan penyakit dan penelitian tentang bagaimana 
+agar palm selalu sustain dengan menciptakan beberapa produk hilirasi, yang mendukung ketahanan energi, pangan dan mendukung 
+permasalahan global (cari research yang berkaitan dengan hal tersebut).

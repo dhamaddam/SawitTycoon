@@ -31,6 +31,17 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) NSInteger tbsAwaitingPickupCount;
 @property (nonatomic) float originX;
 @property (nonatomic) float originZ;
+@property (nonatomic) float soilFertility;
+@property (nonatomic) float geneticVigor;
+@property (nonatomic) NSInteger lowNutritionCount;
+/// BUG diperbaiki -- field ini sudah lama ada di C++ BlockSummary (sejak TPH
+/// per-block) tapi tak pernah diekspos ke sini, persis pola bug yg sama
+/// ditemukan & diperbaiki di sisi Kotlin (BlockSummaryView).
+@property (nonatomic) double tphStock;
+@property (nonatomic) double tphStockOverripe;
+/// Deskripsi kualitatif -- Corley & Tinker (2016) §9.2.3.5 (soil fertility) & bab 6 (D x P seed source).
+@property (nonatomic, readonly) NSString *soilDesc;
+@property (nonatomic, readonly) NSString *genDesc;
 /// Status ringkas utk Estate View ("normal/perhatian/masalah/kritis") --
 /// ambang sederhana, bisa disesuaikan setelah UI-nya ada.
 @property (nonatomic, readonly) NSString *statusEmoji;
@@ -47,6 +58,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL prereqMet;
 @property (nonatomic) BOOL underMax;
 @property (nonatomic, copy) NSString *prereqDesc;
+/// BUG diperbaiki -- deskripsi tugas literatur-grounded sudah lama ada di
+/// HrLevelInfo C++, tak pernah diekspos ke sini, persis pola bug yg sama
+/// ditemukan & diperbaiki di sisi Kotlin (HrLevelInfoView).
+@property (nonatomic, copy) NSString *desc;
 @property (nonatomic, readonly) BOOL recruitable;
 @end
 
@@ -73,18 +88,22 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSInteger)actionPupukSemua;
 - (NSInteger)actionPestisidaSemua;
 - (NSInteger)actionFungisidaSemua;
-- (void)kirimTruk;
+- (void)kirimTruk:(NSInteger)blockId;
 
 - (BOOL)beliHa:(double)amountHa;
 - (BOOL)bukaAfdelingBaru;
 - (BOOL)rekrutLevel:(NSString *)key;
 - (BOOL)bangunPks;
 - (BOOL)upgradePks;
+// Upgrade kapasitas TPH -- fitur baru diminta pengguna. Lihat catatan lengkap di engine.cpp.
+- (BOOL)upgradeTph;
+- (double)tphUpgradeCost;
+- (NSInteger)tphLevel;
 - (BOOL)prosesBatchPks;
 
 - (double)money;
 - (NSInteger)day;
-- (double)tphStock;
+- (double)tphStock:(NSInteger)blockId;
 - (double)tphCap;
 - (double)totalHa;
 - (NSInteger)totalPokok;
@@ -93,17 +112,53 @@ NS_ASSUME_NONNULL_BEGIN
 - (double)hrEfficiency;
 - (NSInteger)hrCount:(NSString *)key;
 - (BOOL)pksBuilt;
+// Posisi dunia PKS -- fondasi tombol "Lihat PKS" (navigasi kamera). Identik Android, lihat catatan lengkap di sawit_jni.cpp.
+- (float)pksWorldX;
+- (float)pksWorldZ;
 - (double)pksInputSilo;
 - (NSInteger)pksLevel;
+- (NSInteger)timeOfDay; // 0=Pagi,1=Siang,2=Malam
+- (BOOL)isRaining;
+- (float)pksProcessPulse;
 - (double)pksOer;
+- (double)pksBuildCost;
+- (double)pksUpgradeCostNow;
+// Audit menemukan: fungsi2 ini BELUM PERNAH ADA di iOS sama sekali --
+// kapasitas batch (bug #10 "TPH-PKS mismatch" blm pernah diport dr Android),
+// & komponen harga/rendemen (estimasi pendapatan tak bisa ditampilkan).
+- (NSInteger)pksCapacityPerBatch;
+- (double)pksCpoPrice;
+- (double)pksPkPrice;
+- (double)pksKerRate;
+- (double)pksAvgTandanKg;
 
-- (NSArray<SawitTreeView *> *)trees;
+// Countdown/progress bar panen per pohon -- fitur baru diminta pengguna:
+// "countdown panen sawit / progress bar pada setiap pohon... tampiilkan
+// progressnya hanya ketika pohon tersebut di klik". Identik Android
+// (nativeGetTreeFfbProgress) -- fungsi TERPISAH (bukan field baru di
+// SawitTreeView, yg akan dipanggil massal tiap frame utk SEMUA pohon).
+// Dipanggil HANYA saat dialog/radial menu pohon dibuka. outFfbTimer=sisa
+// detik, outFfbTimerMax=total detik tahap ini.
+- (void)treeFfbProgress:(NSInteger)treeId outFfbTimer:(float *)outFfbTimer outFfbTimerMax:(float *)outFfbTimerMax;
 /// Fondasi hierarki Kebun>Afdeling>Block>Baris>Pokok -- API sudah siap, UI
 /// Estate/Block View menyusul di sesi berikutnya.
 - (NSArray<SawitBlockSummary *> *)blockSummaries;
 - (NSInteger)blockIdForTree:(NSInteger)treeId;
+// BUG performa BESAR diperbaiki (dilaporkan pengguna: "sistem hampir tidak
+// bisa digunakan jika memliki kebun di atas 30 ha") -- identik Android,
+// lihat catatan lengkap di sawit_jni.cpp. Sekarang per-block (parameter
+// blockIndex baru), kompleksitas O(143) TETAP KONSTAN terlepas berapa ha
+// dimiliki, bukan O(total_pohon_dimiliki) spt sebelumnya.
+- (NSArray<SawitTreeView *> *)treesForBlock:(NSInteger)blockIndex NS_SWIFT_NAME(trees(forBlock:));
+// Cari 1 pohon spesifik LINTAS SEMUA block -- utk selectAndJumpToTree()
+// (dipicu dari Log overlay, bisa mencatat kejadian pohon di block manapun).
+- (nullable SawitTreeView *)findTreeById:(NSInteger)treeId NS_SWIFT_NAME(findTreeById(_:));
 /// Alat uji visual -- acak kondisi kebun tanpa perlu tunggu hari.
 - (void)devRandomizeConditions;
+/// Toggle layer beacon TBS matang -- variabel SHARED renderer_gl.cpp, sama
+/// persis dgn sisi Android (bukan variabel independen yg bisa tak sinkron).
+- (void)setShowHarvestBeacon:(BOOL)show;
+- (BOOL)showHarvestBeacon;
 /// Harga satuan aksi -- dipakai dialog konfirmasi estimasi biaya sebelum
 /// aksi massal dieksekusi.
 - (double)pricePupuk;
@@ -119,6 +174,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// utk layar "Log Aktivitas" yg bisa dibuka kapan saja. index 0 = terbaru.
 - (NSInteger)activityLogCount;
 - (NSString *)activityLogEntry:(NSInteger)indexFromNewest;
+/// treeId terkait 1 entri log (-1 = tak terkait pohon) -- fondasi navigasi
+/// "ketuk log utk lompat ke pohon".
+- (NSInteger)activityLogTreeId:(NSInteger)indexFromNewest;
 
 - (NSString *)saveJson;
 - (BOOL)loadJson:(NSString *)json;
@@ -127,9 +185,34 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)glInit;
 - (void)glResizeWidth:(int)width height:(int)height;
 - (void)glSetCameraPanX:(float)panX panZ:(float)panZ dist:(float)dist yaw:(float)yaw;
+// Avatar pemain (Gameplay Mode, third-person) -- hasil review eksternal
+// poin #5. Lihat catatan lengkap di EngineBridge.mm.
+- (void)movePlayerAvatarDirX:(float)dirX dirZ:(float)dirZ dt:(float)dt;
+- (void)setGameplayModeActive:(BOOL)active;
+- (BOOL)getGameplayModeActive;
+- (void)adjustAvatarZoom:(float)delta;
+// Kamera "lihat sekeliling" via touch-drag (poin #4 laporan).
+- (void)adjustCameraYawOffset:(float)deltaRad;
+// Mendongak "lihat ke atas" -- fitur baru diminta pengguna: "tidak bisa
+// melihat lebih ke atas pohon sawit, berikan lebih jauh sudut pandang
+// hanya untuk melihat ke atas tidak untuk horizontal". Lihat catatan
+// lengkap di renderer_gl.cpp.
+- (void)adjustAvatarLookUpOffset:(float)deltaY;
+// Pengaturan grafik & sensitivitas kamera -- fitur baru diminta pengguna
+// ("tambahkan pengaturan sensivitas dan grafik"). Identik Android, lihat
+// catatan lengkap di renderer_gl.cpp/sawit_jni.cpp.
+- (void)setGraphicsQuality:(NSInteger)level; // 0=Rendah, 1=Sedang, 2=Tinggi
+- (NSInteger)getGraphicsQuality;
+- (void)setCameraSensitivity:(float)mult; // 0.5-2.0, default 1.0
+- (float)getCameraSensitivity;
+// Cari pohon TERDEKAT dari avatar dlm radius -- fondasi interaksi Gameplay
+// Mode. Return -1 kalau tak ada.
+- (NSInteger)nearestTreeToPlayerMaxDist:(float)maxDist;
 /// Inspector Pohon: render close-up 1 pohon berputar otomatis -- MENGGANTIKAN
 /// pendekatan WKWebView/tree_detail.html sepenuhnya (tdk pakai HTML lagi).
 /// Frame TERPISAH (beginFrame/endFrame sendiri) drpd glDrawFrameSelectedTreeId.
+// Mulai transisi kamera smooth saat inspector BARU dibuka -- lihat catatan lengkap di renderer_gl.cpp/sawit_jni.cpp.
+- (void)beginTreeInspectorTransition;
 - (void)glDrawTreeInspectorAge:(float)ageYears frond:(float)frond health:(NSInteger)health ffb:(NSInteger)ffb hasTbsReady:(BOOL)hasTbsReady yawSpin:(float)yawSpin panY:(float)panY nutrition:(float)nutrition;
 - (void)glDrawFrameSelectedTreeId:(NSInteger)selectedTreeId;
 - (void)screenToWorldX:(float)sx y:(float)sy outX:(float *)outX outZ:(float *)outZ;
@@ -139,6 +222,11 @@ NS_ASSUME_NONNULL_BEGIN
 /// Hit-test satu pohon thd titik ketuk layar, mencakup seluruh tinggi & sebaran
 /// mahkota (bukan cuma titik dasar) — mengembalikan jarak dlm PIKSEL LAYAR.
 - (float)hitTestDistanceScreenX:(float)screenX screenY:(float)screenY treeX:(float)treeX treeZ:(float)treeZ ageYears:(float)ageYears;
+// Estate View -- mode zoom-out lihat semua block, dan worldToScreen dibutuhkan
+// hit-test ubin block (bukan pohon, lihat catatan lengkap di renderer_gl.cpp).
+- (void)worldToScreenX:(float)x z:(float)z outX:(float *)outX outY:(float *)outY;
+- (void)setEstateViewModeActive:(BOOL)active layer:(NSInteger)layer;
+- (BOOL)getEstateViewActive;
 
 @end
 

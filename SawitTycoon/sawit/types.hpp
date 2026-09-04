@@ -97,6 +97,17 @@ struct GameConfig {
 enum class FfbState : uint8_t { None, Growing, Ripe, Overripe };
 enum class HealthState : uint8_t { Sehat, Hama, Ganoderma, Mati };
 
+// Fase waktu harian -- Corley & Tinker (2016) + laporan lapangan industri:
+// pemanen kerja ~6:30-13:30 WIB (Pagi = jam kerja UTAMA panen), transport
+// TBS lanjut sampai ~19:00 (Siang = transport/aktivitas lanjutan, TBS yg
+// SUDAH dipanen tetap bisa diangkut), Malam TANPA aktivitas panen BARU sama
+// sekali (tak ada pemanenan malam hari dlm praktik nyata industri sawit --
+// pekerja lapangan istirahat). Pembagian 40/35/25% dari 1 hari game dipilih
+// spy Pagi (jendela panen) tetap jadi porsi TERBESAR (mencerminkan durasi
+// jam kerja aktif yg SEBENARNYA jauh lbh panjang drpd waktu non-kerja
+// malam), bukan pembagian sepertiga rata yg tak berdasar.
+enum class TimeOfDay : uint8_t { Pagi, Siang, Malam };
+
 struct Tree {
     int id = 0;
     double x = 0, z = 0;
@@ -104,6 +115,16 @@ struct Tree {
     double frond = 0.2;          // 0..1 tingkat pelepah menumpuk
     FfbState ffb = FfbState::Growing;
     double ffbTimer = 15.0;
+    // Durasi PENUH tahap FFB saat ini (diisi SAMA PERSIS dgn ffbTimer setiap
+    // kali state berubah/direset) -- fondasi countdown/progress bar per
+    // pohon, fitur baru diminta pengguna: "countdown panen sawit / progress
+    // bar pada setiap pohon... tampiilkan progressnya hanya ketika pohon
+    // tersebut di klik". Dipakai utk hitung persentase: progress = 1.0 -
+    // (ffbTimer/ffbTimerMax) -- TANPA field ini, tak mungkin tahu berapa
+    // "total" durasi tahap saat ini (ffbTimer SENDIRI cuma sisa waktu,
+    // MULAI dari nilai acak berbeda tiap kali direset -- lihat simTick_(),
+    // engine.cpp).
+    double ffbTimerMax = 15.0;
     HealthState health = HealthState::Sehat;
     double sickTimer = 0.0;
     double nutrition = 0.7;      // 0..1
@@ -154,6 +175,36 @@ struct Block {
     double originX = 0;     // pusat grid pohon block ini di dunia (unit game)
     double originZ = 0;     // -- block baru (dari beliHa) ditempatkan di
                              // originX berbeda, area terpisah tanpa tumpang tindih
+
+    // --- Pembeda antar-block: kesuburan tanah & material genetik --------
+    // Corley & Tinker (2016) "The Oil Palm" 5th ed.:
+    //  - §9.2.3.5 "Soil fertility": "an inherently fertile soil... has
+    //    management advantages over an infertile one" -- kesuburan tanah
+    //    BERVARIASI antar lokasi scr alami (bukan seragam sekebun), diukur
+    //    lewat survei tanah SEBELUM pembukaan lahan (§9.2.5 Land evaluation).
+    //  - Bab 6 (breeding/seed production) & Section 2.2.2.6: benih komersial
+    //    D×P (Dura x Pisifera) dr SUMBER/PRODUSEN berbeda punya potensi hasil
+    //    & vigor pertumbuhan berbeda -- bukan satu genetik seragam.
+    // Diinisialisasi ACAK-TAPI-TETAP tiap block dibuat (newGame/beliHa),
+    // MENGGERAKKAN nutrisi dasar seluruh pohon di block itu (lihat
+    // generateBlockTrees_) -- jadi block "tanah subur+benih unggul" scr
+    // VISUAL kanopinya lebih rimbun/hijau tua (via sistem vigor & pemucatan
+    // nutrisi yg SUDAH ADA, tanpa perlu geometri/mesh baru sama sekali).
+    double soilFertility = 1.0; // ~0.70 (marjinal) .. 1.30 (sangat subur)
+    double geneticVigor = 1.0;  // ~0.85 (benih standar) .. 1.15 (benih unggul)
+
+    // --- TPH SENDIRI per block (bukan 1 titik global lagi) ---------------
+    // Corley & Tinker (2016): TPH/"roadside collection point" terkait JALAN
+    // KOLEKSI, yg ada di TIAP block (bukan 1 utk seluruh kebun) -- celah
+    // diperbaiki: sebelumnya SEMUA block berbagi 1 TPH global (kTphX/kTphZ),
+    // jadi pekerja di block jauh (mis. A02 di originX=120) harus jalan
+    // balik puluhan unit ke TPH dekat Block A01 -- tak realistis & lambat.
+    // Posisi TPH tiap block memakai OFFSET RELATIF yg sama dr originX/Z-nya
+    // sendiri (persis spt Block A01 dulu), jadi tiap block dapat TPH di
+    // tepi grid-nya sendiri.
+    double tphX = 0, tphZ = 0;
+    double tphStock = 0;          // TBS matang normal, KHUSUS block ini
+    double tphStockOverripe = 0;  // TBS lewat-matang, KHUSUS block ini
 };
 
 // Agregat status Block, dihitung LIVE dari kondisi pohon saat ini (bukan
@@ -171,7 +222,14 @@ struct BlockSummary {
     int deadCount = 0;
     int readyToHarvestCount = 0;  // ffb Ripe atau Overripe
     int tbsAwaitingPickupCount = 0; // hasTbsReady==true (sudah dipanen, blm diangkut)
+    // Proxy visual "kekurangan N" -- engine kita blm memodelkan N/P/K/Mg
+    // terpisah (cuma 1 dimensi nutrition gabungan), jadi ambang <0.4 dipakai
+    // sbg proxy "kekurangan hara" scr umum (bukan klaim spesifik N doang).
+    int lowNutritionCount = 0;
     double originX = 0, originZ = 0; // pusat grid block -- dipakai UI melompat kamera ke sini
+    double soilFertility = 1.0, geneticVigor = 1.0; // lihat catatan di Block, types.hpp
+    double tphStock = 0, tphStockOverripe = 0; // stok TPH KHUSUS block ini
+    double tphX = 0, tphZ = 0; // posisi TPH block ini (dunia game)
 };
 
 struct LandState {
@@ -234,9 +292,24 @@ struct EconomyState {
     int day = 1;
     double dayTimer = 0;
     double dayLength = 75;
-    double tphStock = 0;          // TBS matang normal
-    double tphStockOverripe = 0;  // TBS lewat-matang -- dijual dgn diskon (lihat kTerlewatDiscount)
-    double tphCap = 30;           // kapasitas GABUNGAN (tphStock + tphStockOverripe)
+    // tphStock/tphStockOverripe DIPINDAH jadi per-block (Block.tphStock/
+    // Block.tphStockOverripe, types.hpp) -- celah diperbaiki: TPH global
+    // tunggal tak masuk akal begitu ada banyak block terpisah jauh scr
+    // spasial (lihat catatan lengkap di Block). tphCap TETAP di sini, tapi
+    // maknanya sekarang kapasitas SETIAP TPH block (bukan gabungan sekebun).
+    double tphCap = 30;
+    // Jenjang upgrade kapasitas TPH -- fitur baru diminta pengguna: "upgrade
+    // kapasitas tph, saat ini tph hanya mampu menampung 30 tbs, harusnya ada
+    // tambah fitur tph atau fitur memperbesar tempat penampungan tph". TAK
+    // ADA referensi kuantitatif ilmiah utk "kapasitas TPH" (scr praktik
+    // nyata TPH adalah area terbuka di tepi ancak/jalan, TBS ditumpuk di
+    // tanah sampai truk datang -- bukan struktur berkapasitas tetap spt
+    // silo) -- angka murni keputusan game balance, KONSISTEN dgn pola
+    // upgrade PKS yg sudah ada (level naik, kapasitas & cost mengikuti).
+    // GLOBAL (semua TPH di semua block ikut naik bersamaan) -- konsisten dgn
+    // tphCap yg jg global, BUKAN per-block terpisah (perubahan arsitektur
+    // lebih besar, di luar scope perbaikan minimal yg diminta).
+    int tphLevel = 1;
     double pricePerTandan = 55000;
     double moraleMultiplier = 1.0;
 };
@@ -261,6 +334,13 @@ struct WorkerRenderInfo {
     // BAWAH dgn hentakan), false=dodos (pokok rendah, gerakan MENDORONG KE
     // ATAS) -- lihat literatur di renderer_gl.cpp buildDodosEgrekAnim().
     bool usingEgrek = false;
+    // Arah hadap (radian, atan2 dr vektor GERAKAN target-posisi_sekarang) --
+    // BUG diperbaiki: dulu drawWorker() TAK PUNYA parameter arah sama sekali
+    // (selalu menghadap arah dunia tetap), jadi pekerja terlihat "salah
+    // orientasi" dibanding baris tanam yg ditanam miring/diagonal (dilaporkan
+    // pengguna: "posisi rotasi player... tidak sesuai dgn posisi tanah").
+    // 0 kalau idle/diam (tak ada arah gerakan yg berarti).
+    double facingRad = 0;
 };
 
 // ---------------------------------------------------------------------------
@@ -274,6 +354,21 @@ struct WorkerRenderInfo {
 struct TruckState {
     bool active = false;
     double progress = 0.0; // 0..1, dari TPH menuju keluar area (arah PKS)
+    int blockId = -1; // block mana yg sedang diproses -- TPH-nya beda posisi per block sekarang
+};
+
+// Avatar pemain yang bisa DIGERAKKAN LANGSUNG (Gameplay Mode, third-person)
+// -- hasil review eksternal poin #5: "third-person, perspective camera...
+// Tambahkan smooth follow, collision, zoom terbatas". Fitur BARU sepenuhnya
+// -- game SEBELUMNYA murni tap-to-command (ketuk pohon/tombol, pekerja NPC
+// bergerak sendiri), TIDAK ADA karakter yang dikontrol langsung pemain.
+// facingRad: arah hadap avatar (dipakai animasi jalan drawWorker() yg SUDAH
+// ADA -- avatar pemain pakai model & animasi yg SAMA dgn worker biasa,
+// bukan model terpisah, demi konsistensi visual & efisiensi).
+struct PlayerAvatarState {
+    double x = 0.0, z = 0.0;
+    double facingRad = 0.0;
+    bool moving = false; // true selama input joystick aktif -- dipakai animasi jalan (poseCode)
 };
 
 // ---------------------------------------------------------------------------
@@ -284,6 +379,7 @@ struct TruckState {
 struct LogEntry {
     int day = 1;
     std::string text;
+    int treeId = -1; // -1 = tak terkait pohon tertentu (mis. rekrut SDM, jual TBS ke PKS)
 };
 
 } // namespace sawit

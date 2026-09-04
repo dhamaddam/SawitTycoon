@@ -9,12 +9,28 @@
 /* Begin PBXBuildFile section */
 		F281E9DB30389F4200002C7C /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F281E9DA30389F4200002C7C /* OpenGLES.framework */; };
 		F281E9DD30389F4F00002C7C /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F281E9DC30389F4F00002C7C /* GLKit.framework */; };
+		F2BB77D230455FA400ED1A1C /* cash.wav in Resources */ = {isa = PBXBuildFile; fileRef = F2BB77CC30455FA400ED1A1C /* cash.wav */; };
+		F2BB77D330455FA400ED1A1C /* error.wav in Resources */ = {isa = PBXBuildFile; fileRef = F2BB77CE30455FA400ED1A1C /* error.wav */; };
+		F2BB77D430455FA400ED1A1C /* notification.wav in Resources */ = {isa = PBXBuildFile; fileRef = F2BB77D030455FA400ED1A1C /* notification.wav */; };
+		F2BB77D530455FA400ED1A1C /* bgm_loop.wav in Resources */ = {isa = PBXBuildFile; fileRef = F2BB77CB30455FA400ED1A1C /* bgm_loop.wav */; };
+		F2BB77D630455FA400ED1A1C /* levelup.wav in Resources */ = {isa = PBXBuildFile; fileRef = F2BB77CF30455FA400ED1A1C /* levelup.wav */; };
+		F2BB77D730455FA400ED1A1C /* success.wav in Resources */ = {isa = PBXBuildFile; fileRef = F2BB77D130455FA400ED1A1C /* success.wav */; };
+		F2BB77D830455FA400ED1A1C /* click.wav in Resources */ = {isa = PBXBuildFile; fileRef = F2BB77CD30455FA400ED1A1C /* click.wav */; };
+		F2BB77E0304668A700ED1A1C /* bgm_loop.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = F2BB77DF304668A700ED1A1C /* bgm_loop.mp3 */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		F281E9A430389A7100002C7C /* SawitTycoon.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SawitTycoon.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F281E9DA30389F4200002C7C /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
 		F281E9DC30389F4F00002C7C /* GLKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLKit.framework; path = System/Library/Frameworks/GLKit.framework; sourceTree = SDKROOT; };
+		F2BB77CB30455FA400ED1A1C /* bgm_loop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = bgm_loop.wav; sourceTree = "<group>"; };
+		F2BB77CC30455FA400ED1A1C /* cash.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = cash.wav; sourceTree = "<group>"; };
+		F2BB77CD30455FA400ED1A1C /* click.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = click.wav; sourceTree = "<group>"; };
+		F2BB77CE30455FA400ED1A1C /* error.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = error.wav; sourceTree = "<group>"; };
+		F2BB77CF30455FA400ED1A1C /* levelup.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = levelup.wav; sourceTree = "<group>"; };
+		F2BB77D030455FA400ED1A1C /* notification.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = notification.wav; sourceTree = "<group>"; };
+		F2BB77D130455FA400ED1A1C /* success.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = success.wav; sourceTree = "<group>"; };
+		F2BB77DF304668A700ED1A1C /* bgm_loop.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = bgm_loop.mp3; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -54,6 +70,7 @@
 		F281E99B30389A7100002C7C = {
 			isa = PBXGroup;
 			children = (
+				F2BB77CA30455F8700ED1A1C /* Resources */,
 				F281E9A630389A7100002C7C /* SawitTycoon */,
 				F281E9D930389F4100002C7C /* Frameworks */,
 				F281E9A530389A7100002C7C /* Products */,
@@ -75,6 +92,21 @@
 				F281E9DA30389F4200002C7C /* OpenGLES.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		F2BB77CA30455F8700ED1A1C /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				F2BB77DF304668A700ED1A1C /* bgm_loop.mp3 */,
+				F2BB77CB30455FA400ED1A1C /* bgm_loop.wav */,
+				F2BB77CC30455FA400ED1A1C /* cash.wav */,
+				F2BB77CD30455FA400ED1A1C /* click.wav */,
+				F2BB77CE30455FA400ED1A1C /* error.wav */,
+				F2BB77CF30455FA400ED1A1C /* levelup.wav */,
+				F2BB77D030455FA400ED1A1C /* notification.wav */,
+				F2BB77D130455FA400ED1A1C /* success.wav */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -141,6 +173,14 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F2BB77E0304668A700ED1A1C /* bgm_loop.mp3 in Resources */,
+				F2BB77D230455FA400ED1A1C /* cash.wav in Resources */,
+				F2BB77D330455FA400ED1A1C /* error.wav in Resources */,
+				F2BB77D430455FA400ED1A1C /* notification.wav in Resources */,
+				F2BB77D530455FA400ED1A1C /* bgm_loop.wav in Resources */,
+				F2BB77D630455FA400ED1A1C /* levelup.wav in Resources */,
+				F2BB77D730455FA400ED1A1C /* success.wav in Resources */,
+				F2BB77D830455FA400ED1A1C /* click.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
